@@ -1,20 +1,45 @@
 @import "tailwindcss";
+@import "./styles/glassmorphism.css";
 
-/* Bandwidth-Light Mode Styles */
-[data-theme="light"] {
-  --color-bg: #000000;
-  --color-text: #00ff00;
-}
+/* Design System Variables */
+@layer base {
+  :root {
+    /* Colors */
+    --black: #000000;
+    --dark-gray: #0a0a0a;
+    --medium-gray: #1a1a1a;
 
-[data-theme="light"] img,
-[data-theme="light"] video,
-[data-theme="light"] iframe {
-  display: none;
-}
+    /* Glass Effects */
+    --glass-bg: rgba(10, 10, 10, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --backdrop-blur: blur(20px);
 
-[data-theme="light"] body {
-  background-color: #000000;
-  color: #00ff00;
+    /* Accent Colors */
+    --accent-blue: #3b82f6;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --accent-yellow: #f59e0b;
+
+    /* Text Colors */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.5);
+  }
+
+  body {
+    @apply bg-black text-white antialiased;
+    font-family:
+      "Inter",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+  }
+
+  * {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
 }
 
 /* Scrollbar Styling */
