@@ -1,0 +1,346 @@
+﻿  console.log
+    [VoiceAgent] Γ£à @livekit/rtc-node loaded successfully
+
+      at src/services/voiceAgent.service.js:23:11
+
+  console.log
+    Γ£à MongoDB connected successfully
+
+      at server.js:38:23
+
+node.exe : (node:2328) ExperimentalWarning: VM Modules is an experimental feature and might 
+change at any time
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\omupa\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:2328) Exp...nge at any time:String) [], Rem 
+   oteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    ≡ƒÜÇ Server running on port 5000
+
+      at Server.<anonymous> (server.js:66:11)
+
+  console.log
+    ≡ƒôì Environment: test
+
+      at Server.<anonymous> (server.js:67:11)
+
+  console.log
+    [VoiceAgent] Starting session for room: test-room-1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: test-room-1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: room-1772283479821
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: room-1772283479821
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: test-room-2
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: test-room-2
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: test-room-3
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: test-room-3
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: agent-test-room
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: agent-test-room
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.error
+    [VoiceRoute] Agent failed to start: Agent connection failed
+
+    [0m [90m 26 |[39m     [90m// Start the Node agent in the background (fire-and-forget)[39m
+     [90m 27 |[39m     voiceAgentService[33m.[39mstartVoiceSession(roomName)[33m.[39m[36mcatch[39m((err) [33m=>[39m {
+    [31m[1m>[22m[39m[90m 28 |[39m       console[33m.[39merror([32m'[VoiceRoute] Agent failed to start:'[39m[33m,[39m err[33m.[39mmessage)[33m;[39m
+     [90m    |[39m               [31m[1m^[22m[39m
+     [90m 29 |[39m     })[33m;[39m
+     [90m 30 |[39m
+     [90m 31 |[39m     res[33m.[39mjson({[0m
+
+      at src/routes/voice.routes.js:28:15
+
+  console.log
+    [VoiceAgent] Starting session for room: room-1772283480020
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: room-1772283480020
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: room-1772283480047
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: room-1772283480047
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: no-url-room
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: no-url-room
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: concurrent-room-0
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: concurrent-room-0
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: concurrent-room-1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: concurrent-room-1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: concurrent-room-2
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: concurrent-room-2
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: concurrent-room-3
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: concurrent-room-3
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: concurrent-room-4
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: concurrent-room-4
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: room-1772283480257
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: room-1772283480257
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: room-1772283480264
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: room-1772283480264
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: room-1772283480270
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: room-1772283480270
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: room-1772283480276
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: room-1772283480276
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] Starting session for room: room-1772283480282
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:54:13)
+
+  console.log
+    [VoiceAgent] Γ£à Connected to room: room-1772283480282
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:105:15)
+
+  console.log
+    [VoiceAgent]    Participants in room: 1
+
+      at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:106:15)
+
+  console.log
+    [VoiceAgent] No active session found for room: nonexistent-room
+
+      at VoiceAgentService.endSession (src/services/voiceAgent.service.js:132:15)
+
+PASS tests/3.1.test.js
+  Phase 3.1 ΓÇö LiveKit Infrastructure
+    POST /api/voice/sessions/initiate ΓÇö Token Generation
+      ΓêÜ should return 200 with roomName, token, and livekitUrl (301 ms)
+      ΓêÜ should auto-generate roomName when not provided (29 ms)
+      ΓêÜ should auto-generate simulatorIdentity when not provided (27 ms)
+      ΓêÜ should use custom simulatorIdentity when provided (23 ms)
+    POST /api/voice/sessions/initiate ΓÇö Non-blocking Agent
+      ΓêÜ should return response without waiting for agent to connect (27 ms)
+      ΓêÜ should still return 200 even if agent startup throws (92 ms)
+    POST /api/voice/sessions/initiate ΓÇö Input Handling
+      ΓêÜ should handle empty body gracefully (28 ms)
+      ΓêÜ should handle missing Content-Type gracefully (29 ms)
+    POST /api/voice/sessions/initiate ΓÇö Missing LIVEKIT_URL
+      ΓêÜ should return 200 with livekitUrl undefined when LIVEKIT_URL is unset (38 ms)
+    POST /api/voice/sessions/initiate ΓÇö Concurrent Requests
+      ΓêÜ should handle 5 concurrent requests without errors (110 ms)
+      ΓêÜ should generate unique room names for concurrent requests without roomName (94 ms)
+    GET /api/voice/status ΓÇö Health Check
+      ΓêÜ should return phase 3.1 status with livekit health (57 ms)
+    DELETE /api/voice/sessions/:roomName ΓÇö Session Teardown
+      ΓêÜ should return success even if no active session exists (30 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       13 passed, 13 total
+Snapshots:   0 total
+Time:        2.523 s
+Ran all test suites matching tests/3.1.test.js.

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Simulator — Phase 3.1</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    .card {
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    h1 { font-size: 1.3rem; margin-bottom: 0.25rem; color: #fff; }
+    .subtitle { color: #666; font-size: 0.8rem; margin-bottom: 1.5rem; }
+    .input-group { margin-bottom: 1rem; }
+    .input-group label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 0.3rem; }
+    .input-group input {
+      width: 100%; padding: 0.6rem 0.8rem; background: #1e1e1e;
+      border: 1px solid #333; border-radius: 8px; color: #fff; font-size: 0.9rem;
+    }
+    .input-group input:focus { outline: none; border-color: #22c55e; }
+    .btn-row { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    button {
+      flex: 1; padding: 0.7rem; border: none; border-radius: 8px;
+      font-size: 0.9rem; cursor: pointer; font-weight: 600; transition: opacity 0.2s;
+    }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #connectBtn { background: #22c55e; color: #000; }
+    #disconnectBtn { background: #ef4444; color: #fff; }
+    .status-bar {
+      margin-top: 1rem; padding: 0.5rem 0.75rem; background: #111;
+      border-radius: 8px; display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .status-dot.disconnected { background: #666; }
+    .status-dot.connecting { background: #eab308; animation: pulse 1s infinite; }
+    .status-dot.connected { background: #22c55e; }
+    .status-dot.error { background: #ef4444; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+    .log-area {
+      margin-top: 1rem; padding: 0.75rem; background: #0d0d0d;
+      border: 1px solid #222; border-radius: 8px; font-family: 'Cascadia Code', monospace;
+      font-size: 0.75rem; max-height: 220px; overflow-y: auto; line-height: 1.6;
+    }
+    .log-line { padding: 1px 0; }
+    .log-line .time { color: #555; }
+    .log-line.info { color: #22c55e; }
+    .log-line.warn { color: #eab308; }
+    .log-line.error { color: #ef4444; }
+    .participants {
+      margin-top: 1rem; padding: 0.75rem; background: #111;
+      border-radius: 8px; font-size: 0.8rem;
+    }
+    .participants h3 { font-size: 0.75rem; color: #888; text-transform: uppercase; margin-bottom: 0.5rem; }
+    .participant-list { list-style: none; }
+    .participant-list li { padding: 0.2rem 0; display: flex; align-items: center; gap: 0.4rem; }
+    .participant-list li::before { content: '👤'; font-size: 0.7rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🎙️ LiveKit Voice Simulator</h1>
+    <p class="subtitle">Phase 3.1 — Infrastructure Connection Test</p>
+
+    <div class="input-group">
+      <label>Room Name (optional)</label>
+      <input type="text" id="roomInput" placeholder="Leave empty for auto-generated name">
+    </div>
+
+    <div class="btn-row">
+      <button id="connectBtn">Connect</button>
+      <button id="disconnectBtn" disabled>Disconnect</button>
+    </div>
+
+    <div class="status-bar">
+      <span class="status-dot disconnected" id="statusDot"></span>
+      <span id="statusText">Disconnected</span>
+    </div>
+
+    <div class="participants" id="participantsPanel" style="display:none;">
+      <h3>Participants</h3>
+      <ul class="participant-list" id="participantList"></ul>
+    </div>
+
+    <div class="log-area" id="logArea"></div>
+  </div>
+
+  <script type="module">
+    // Import LiveKit client SDK from CDN (browser version — this is correct for the browser simulator)
+    import {
+      Room,
+      RoomEvent,
+      ConnectionState,
+    } from 'https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs';
+
+    const API_BASE = window.location.origin + '/api/voice';
+
+    let room = null;
+
+    // --- UI Helpers ---
+    function setStatus(state, text) {
+      const dot = document.getElementById('statusDot');
+      const label = document.getElementById('statusText');
+      dot.className = `status-dot ${state}`;
+      label.textContent = text;
+    }
+
+    function log(msg, level = 'info') {
+      const area = document.getElementById('logArea');
+      const time = new Date().toLocaleTimeString();
+      area.innerHTML += `<div class="log-line ${level}"><span class="time">[${time}]</span> ${msg}</div>`;
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function updateParticipants() {
+      const panel = document.getElementById('participantsPanel');
+      const list = document.getElementById('participantList');
+      if (!room) { panel.style.display = 'none'; return; }
+
+      const participants = [
+        { identity: room.localParticipant.identity, local: true },
+        ...Array.from(room.remoteParticipants.values()).map(p => ({
+          identity: p.identity, local: false
+        }))
+      ];
+
+      panel.style.display = 'block';
+      list.innerHTML = participants.map(p =>
+        `<li>${p.identity}${p.local ? ' (you)' : ''}</li>`
+      ).join('');
+    }
+
+    // --- Connect ---
+    document.getElementById('connectBtn').addEventListener('click', async () => {
+      const connectBtn = document.getElementById('connectBtn');
+      const disconnectBtn = document.getElementById('disconnectBtn');
+      connectBtn.disabled = true;
+      setStatus('connecting', 'Requesting token...');
+      log('Requesting session from server...');
+
+      try {
+        const roomInput = document.getElementById('roomInput').value.trim();
+        const body = {};
+        if (roomInput) body.roomName = roomInput;
+
+        const res = await fetch(`${API_BASE}/sessions/initiate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        log(`Room: ${data.roomName}`);
+        log(`Agent identity: ${data.agentIdentity}`);
+
+        // Create and configure LiveKit room
+        room = new Room({
+          adaptiveStream: true,
+          dynacast: true,
+        });
+
+        room.on(RoomEvent.ConnectionStateChanged, (state) => {
+          log(`Connection state: ${state}`, state === 'connected' ? 'info' : 'warn');
+        });
+
+        room.on(RoomEvent.ParticipantConnected, (p) => {
+          log(`Participant joined: ${p.identity}`);
+          updateParticipants();
+        });
+
+        room.on(RoomEvent.ParticipantDisconnected, (p) => {
+          log(`Participant left: ${p.identity}`, 'warn');
+          updateParticipants();
+        });
+
+        room.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
+          log(`Subscribed to ${track.kind} from ${participant.identity}`);
+          if (track.kind === 'audio') {
+            const el = track.attach();
+            el.style.display = 'none';
+            document.body.appendChild(el);
+          }
+        });
+
+        room.on(RoomEvent.Disconnected, (reason) => {
+          log(`Disconnected: ${reason || 'unknown'}`, 'warn');
+          setStatus('disconnected', 'Disconnected');
+          connectBtn.disabled = false;
+          disconnectBtn.disabled = true;
+          document.getElementById('participantsPanel').style.display = 'none';
+          room = null;
+        });
+
+        // Connect to LiveKit
+        setStatus('connecting', 'Connecting to LiveKit...');
+        await room.connect(data.livekitUrl, data.token);
+        setStatus('connected', `Connected — ${data.roomName}`);
+        log('✅ Connected to LiveKit room!');
+
+        // Enable microphone
+        try {
+          await room.localParticipant.setMicrophoneEnabled(true);
+          log('🎤 Microphone enabled');
+        } catch (micErr) {
+          log(`⚠️ Microphone failed: ${micErr.message}. Continue without mic.`, 'warn');
+        }
+
+        updateParticipants();
+        disconnectBtn.disabled = false;
+
+      } catch (err) {
+        log(`❌ Error: ${err.message}`, 'error');
+        setStatus('error', 'Connection failed');
+        connectBtn.disabled = false;
+      }
+    });
+
+    // --- Disconnect ---
+    document.getElementById('disconnectBtn').addEventListener('click', async () => {
+      if (room) {
+        log('Disconnecting...');
+        await room.disconnect();
+        room = null;
+      }
+    });
+  </script>
+</body>
+</html>
