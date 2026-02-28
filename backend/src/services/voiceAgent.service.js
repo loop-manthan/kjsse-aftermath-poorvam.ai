@@ -13,6 +13,7 @@
 
 import livekitService from './livekit.service.js';
 import sarvamService from './sarvam.service.js';
+import { generateReply } from './llm.service.js';
 
 // --- Dynamic import with graceful fallback ---
 let Room = null;
@@ -48,9 +49,46 @@ const GREETING_TEXT = 'Namaste! Poorvam AI mein aapka swagat hai. Aapko kya seva
 const FALLBACK_TEXT = 'Maaf kijiye, main samajh nahi paaya. Kripya dobara bolein.';
 const ECHO_PREFIX = 'Aapne kaha: ';
 
+// ── aftermath-hacks agent system prompt ──
+const AGENT_SYSTEM_PROMPT = `You are "aftermath-hacks", a patient, clear, and reassuring Hindi-speaking voice assistant for blue-collar workers.
+
+DEMEANOUR & IDENTITY
+- Speak slowly when needed; listen carefully; repeat information to ensure understanding.
+- Use simple, colloquial Hindi only (no English except very common job terms the worker uses).
+- Never guess missing information — ask calmly for more details.
+- Never share or ask for sensitive data (OTP, Aadhaar, bank details, payments). Warn the worker if asked.
+- Maintain a warm, respectful, encouraging tone.
+
+GOAL
+1. Collect complete job details: client name, location, nearest landmark, building name, floor/flat, scheduled time, job type, client phone number.
+2. Repeat the full summary for confirmation.
+3. Ask worker's current location (nearest landmark) and give 2-4 simple, landmark-based directional steps.
+4. Provide a short call script for the worker to confirm attendance or reschedule with the client/coordinator.
+5. Warn about never sharing OTP or financial info.
+6. Offer to repeat summary or directions before ending.
+
+FLOW
+- Greet: "नमस्ते! क्या आप अभी बात कर सकते हैं? आपको किस में मदद चाहिए—अगले काम की डिटेल्स, रास्ता, या क्लाइंट को कॉल करने का तरीका?"
+- Collect details one by one if missing: client name, area + landmark, building + floor, job type, time, client phone.
+- If answer is incomplete: "कृपया कोई बड़ा लैंडमार्क बताइए जैसे स्टेशन, बस स्टॉप, मंदिर, अस्पताल या सोसाइटी का गेट।"
+- Confirm summary: "मैं आपकी जानकारी दोहरा रहा हूँ — …. क्या ये सब सही है?"
+- Directions: ask current landmark, then give 2-4 steps. Offer to repeat slowly.
+- Call script: "नमस्ते, मैं {काम} के लिए आ रहा हूँ। मैं लगभग {समय} में पहुँच जाऊँगा। क्या आप उपलब्ध हैं?"
+- Reschedule script: "नमस्ते, मैं आज {काम} के लिए नहीं आ पाऊँगा। कृपया अपने कॉर्डिनेटर को सूचना दें। धन्यवाद।"
+- Warning: "कृपया ध्यान दें, कोई भी ओटीपी, बैंक या पैसे की जानकारी किसी को मत दीजिए।"
+- Closing: "धन्यवाद। अगर आपको फिर मदद चाहिए तो कॉल करिए। आपका दिन शुभ हो।"
+
+GUARDRAILS
+- Never give map-based or backend-driven directions; rely solely on landmarks reported by the worker.
+- Do not call clients yourself; provide the number and script.
+- Keep instructions brief but thorough.
+- Always confirm summary and directions before ending.
+- Reply in 1-3 short sentences per turn. Do not produce long monologues.`;
+
 class VoiceAgentService {
   constructor() {
     this._activeSessions = new Map();
+    this._sessionResults = new Map(); // roomName -> { status, events[] }
   }
 
   // ─────────────────────────────────────────
@@ -96,12 +134,120 @@ class VoiceAgentService {
 
     this._activeSessions.set(roomName, { room, timer: sessionTimer });
 
-    // 4. Run speech pipeline in background (non-blocking)
-    this._runPipeline(roomName, room).catch((err) => {
-      console.error(`[VoiceAgent] Pipeline error in ${roomName}:`, err.message);
-    });
+    // 4. Choose pipeline based on debug mode
+    const debugMode = process.env.VOICE_DEBUG_MODE;
+    if (debugMode === 'stt-llm') {
+      this._runSttGeminiDebug(roomName, room).catch((err) => {
+        console.error(`[VoiceAgent] STT-LLM debug error in ${roomName}:`, err.message);
+      });
+    } else {
+      this._runPipeline(roomName, room).catch((err) => {
+        console.error(`[VoiceAgent] Pipeline error in ${roomName}:`, err.message);
+      });
+    }
 
     return { roomName, status: 'agent_connected' };
+  }
+
+  // ─────────────────────────────────────────
+  //  PRIVATE: STT → Gemini debug pipeline (no TTS)
+  // ─────────────────────────────────────────
+
+  _pushResult(roomName, event) {
+    if (!this._sessionResults.has(roomName)) {
+      this._sessionResults.set(roomName, { status: 'running', events: [] });
+    }
+    const entry = this._sessionResults.get(roomName);
+    entry.events.push({ ...event, ts: Date.now() });
+  }
+
+  getSessionResults(roomName) {
+    return this._sessionResults.get(roomName) || null;
+  }
+
+  async _runSttGeminiDebug(roomName, room) {
+    this._sessionResults.set(roomName, { status: 'running', events: [] });
+
+    try {
+      // Speak greeting so the user knows the agent is alive
+      console.log(`[VOICE] STT-LLM debug mode — speaking greeting...`);
+      this._pushResult(roomName, { type: 'status', message: 'Speaking greeting…' });
+      await this._speak(room, GREETING_TEXT);
+
+      console.log(`[VOICE] STT-LLM debug mode — waiting for audio track...`);
+      this._pushResult(roomName, { type: 'status', message: 'Waiting for audio track…' });
+      const remoteTrack = await this._waitForAudioTrack(room, 15_000);
+
+      if (!remoteTrack) {
+        console.log('[VOICE][STT] No audio track received within timeout.');
+        this._pushResult(roomName, { type: 'error', message: 'No audio track received within timeout.' });
+        this._sessionResults.get(roomName).status = 'done';
+        return;
+      }
+
+      this._pushResult(roomName, { type: 'status', message: `Listening for ${LISTEN_DURATION_MS / 1000}s…` });
+      console.log(`[VOICE] Listening for ${LISTEN_DURATION_MS}ms...`);
+      const wav = await this._listen(remoteTrack, LISTEN_DURATION_MS);
+
+      if (!wav || wav.length <= 44) {
+        console.log('[VOICE][STT] empty — no audio captured');
+        this._pushResult(roomName, { type: 'error', message: 'No audio captured.' });
+        this._sessionResults.get(roomName).status = 'done';
+        return;
+      }
+
+      const audioBytes = wav.length;
+      console.log(`[VOICE] Captured ${audioBytes} bytes. Running STT...`);
+      this._pushResult(roomName, { type: 'status', message: `Captured ${audioBytes} bytes. Running STT…` });
+
+      // STT
+      const sttStart = Date.now();
+      console.time('stt');
+      const { transcript } = await sarvamService.speechToText(wav, { languageCode: 'hi-IN' });
+      console.timeEnd('stt');
+      const sttMs = Date.now() - sttStart;
+
+      if (!transcript || transcript.trim() === '') {
+        console.log('[VOICE][STT] empty');
+        this._pushResult(roomName, { type: 'stt', transcript: '', durationMs: sttMs });
+        this._sessionResults.get(roomName).status = 'done';
+        return;
+      }
+
+      console.log('[VOICE][STT]', transcript);
+      this._pushResult(roomName, { type: 'stt', transcript, durationMs: sttMs });
+
+      // LLM
+      const llmStart = Date.now();
+      console.time('llm');
+      const reply = await generateReply({ systemPrompt: AGENT_SYSTEM_PROMPT, userText: transcript });
+      console.timeEnd('llm');
+      const llmMs = Date.now() - llmStart;
+
+      console.log('[VOICE][LLM]', reply);
+      this._pushResult(roomName, { type: 'llm', reply, durationMs: llmMs });
+
+      // Speak the LLM reply back to the user via TTS
+      if (reply && reply.trim()) {
+        console.log(`[VOICE] Speaking LLM reply via TTS...`);
+        this._pushResult(roomName, { type: 'status', message: 'Speaking reply…' });
+        await this._speak(room, reply);
+      }
+
+      this._sessionResults.get(roomName).status = 'done';
+
+    } catch (err) {
+      console.error(`[VOICE] STT-LLM debug pipeline failed:`, err.message);
+      this._pushResult(roomName, { type: 'error', message: err.message });
+      if (this._sessionResults.has(roomName)) this._sessionResults.get(roomName).status = 'error';
+    } finally {
+      // Always disconnect cleanly
+      try {
+        await this.endSession(roomName);
+        this._pushResult(roomName, { type: 'status', message: 'Disconnected cleanly.' });
+        console.log(`[VOICE] Session ${roomName} disconnected cleanly.`);
+      } catch (_) {}
+    }
   }
 
   // ─────────────────────────────────────────

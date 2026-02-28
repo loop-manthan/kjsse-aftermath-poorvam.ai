@@ -3,518 +3,412 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Phase 3.2 — Voice E2E Test</title>
-  <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.17.2/dist/livekit-client.umd.js"></script>
+  <title>Voice E2E Test — STT → Gemini</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #0e1117; --surface: #161b22; --border: #30363d;
-      --text: #e6edf3; --text-dim: #8b949e; --accent: #58a6ff;
-      --green: #3fb950; --red: #f85149; --orange: #d29922;
-      --radius: 10px;
-    }
-    body {
-      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg); color: var(--text);
-      min-height: 100vh; padding: 24px;
-    }
-    h1 {
-      font-size: 22px; font-weight: 600; margin-bottom: 4px;
-      background: linear-gradient(135deg, var(--accent), #a371f7);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .subtitle { font-size: 13px; color: var(--text-dim); margin-bottom: 20px; }
-    .grid { display: grid; grid-template-columns: 340px 1fr; gap: 16px; }
-    .panel {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 16px;
-    }
-    .panel-title {
-      font-size: 13px; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 12px;
-    }
-    label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
-    input[type="text"] {
-      width: 100%; padding: 8px 10px; font-size: 13px;
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 6px; color: var(--text); outline: none;
-      transition: border-color 0.2s;
-    }
-    input[type="text"]:focus { border-color: var(--accent); }
-    .field { margin-bottom: 12px; }
-    .btn-row { display: flex; gap: 8px; margin-top: 16px; }
-    button {
-      flex: 1; padding: 10px 16px; font-size: 13px; font-weight: 600;
-      border: none; border-radius: 6px; cursor: pointer;
-      transition: all 0.2s; letter-spacing: 0.3px;
-    }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-connect { background: var(--green); color: #000; }
-    .btn-connect:hover:not(:disabled) { background: #46d160; }
-    .btn-disconnect { background: var(--red); color: #fff; }
-    .btn-disconnect:hover:not(:disabled) { background: #ff6b61; }
-
-    .status-bar {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 12px; border-radius: 6px;
-      background: var(--bg); border: 1px solid var(--border);
-      margin-bottom: 12px; font-size: 13px;
-    }
-    .dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--text-dim); flex-shrink: 0;
-    }
-    .dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    .dot.connecting { background: var(--orange); animation: pulse 1s infinite; }
-    .dot.error { background: var(--red); }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-    .info-card {
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 6px; padding: 8px 10px;
-    }
-    .info-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-    .info-value { font-size: 13px; font-weight: 500; margin-top: 2px; word-break: break-all; }
-
-    .participants {
-      list-style: none; background: var(--bg);
-      border: 1px solid var(--border); border-radius: 6px;
-      padding: 8px; min-height: 40px;
-    }
-    .participants li {
-      font-size: 12px; padding: 4px 8px; border-radius: 4px;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .participants li + li { margin-top: 2px; }
-    .p-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-    .p-tag {
-      font-size: 9px; padding: 1px 5px; border-radius: 3px;
-      background: #30363d; color: var(--text-dim);
-    }
-
-    .log-panel { display: flex; flex-direction: column; height: 100%; min-height: 500px; }
-    .log-area {
-      flex: 1; background: var(--bg); border: 1px solid var(--border);
-      border-radius: 6px; padding: 10px; overflow-y: auto;
-      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-      font-size: 12px; line-height: 1.7;
-    }
-    .log-entry { display: flex; gap: 8px; }
-    .log-time { color: var(--text-dim); flex-shrink: 0; }
-    .log-msg { word-break: break-word; }
-    .log-info .log-msg { color: var(--accent); }
-    .log-success .log-msg { color: var(--green); }
-    .log-error .log-msg { color: var(--red); }
-    .log-warn .log-msg { color: var(--orange); }
-    .log-event .log-msg { color: #a371f7; }
-    .log-clear {
-      font-size: 11px; color: var(--text-dim); background: none;
-      border: 1px solid var(--border); padding: 4px 10px;
-      border-radius: 4px; cursor: pointer; align-self: flex-end;
-      margin-bottom: 6px; flex: none;
-    }
-    .log-clear:hover { border-color: var(--text-dim); }
-
-    .mic-status {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; color: var(--text-dim);
-      margin-top: 8px;
-    }
-    .mic-icon { font-size: 16px; }
-
-    #remoteAudio { display: none; }
-
-    @media (max-width: 768px) {
-      .grid { grid-template-columns: 1fr; }
-    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:#09090b;color:#e4e4e7;min-height:100vh;padding:1.5rem}
+    .container{max-width:960px;margin:0 auto}
+    h1{font-size:1.4rem;color:#fff;margin-bottom:.15rem}
+    .sub{font-size:.78rem;color:#71717a;margin-bottom:1.5rem}
+    /* ── Grid layout ── */
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:720px){.grid{grid-template-columns:1fr}}
+    .panel{background:#18181b;border:1px solid #27272a;border-radius:12px;padding:1.25rem}
+    .panel h2{font-size:.85rem;color:#a1a1aa;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem}
+    /* ── Inputs ── */
+    label{display:block;font-size:.75rem;color:#71717a;margin-bottom:.2rem}
+    input,select{width:100%;padding:.5rem .65rem;background:#0a0a0a;border:1px solid #333;border-radius:6px;color:#fff;font-size:.8rem;margin-bottom:.6rem}
+    input:focus,select:focus{outline:none;border-color:#22c55e}
+    /* ── Buttons ── */
+    .btn-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
+    button{padding:.55rem .9rem;border:none;border-radius:6px;font-size:.8rem;cursor:pointer;font-weight:600;transition:.15s}
+    button:disabled{opacity:.35;cursor:not-allowed}
+    .btn-green{background:#22c55e;color:#000}
+    .btn-red{background:#ef4444;color:#fff}
+    .btn-blue{background:#3b82f6;color:#fff}
+    .btn-yellow{background:#eab308;color:#000}
+    .btn-ghost{background:#27272a;color:#d4d4d8}
+    /* ── Status ── */
+    .status-bar{margin-top:.75rem;padding:.45rem .7rem;background:#111;border-radius:6px;display:flex;align-items:center;gap:.45rem;font-size:.78rem}
+    .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .dot.off{background:#555}.dot.wait{background:#eab308;animation:pulse 1s infinite}.dot.on{background:#22c55e}.dot.err{background:#ef4444}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    /* ── Participants ── */
+    .part-list{list-style:none;font-size:.8rem;margin-top:.4rem}
+    .part-list li{padding:.15rem 0;display:flex;align-items:center;gap:.35rem}
+    .part-list li::before{content:'👤';font-size:.65rem}
+    /* ── Event log ── */
+    .log{margin-top:.75rem;padding:.6rem;background:#0a0a0a;border:1px solid #1e1e1e;border-radius:8px;font-family:'Cascadia Code','Fira Code',monospace;font-size:.72rem;max-height:200px;overflow-y:auto;line-height:1.55}
+    .log .t{color:#555}
+    .log .info{color:#22c55e}
+    .log .warn{color:#eab308}
+    .log .error{color:#ef4444}
+    /* ── Results cards ── */
+    .result-card{margin-top:.6rem;padding:.75rem;border-radius:8px;border:1px solid #27272a;background:#111}
+    .result-card h3{font-size:.75rem;color:#a1a1aa;margin-bottom:.35rem}
+    .result-card .val{font-size:.9rem;color:#fff;white-space:pre-wrap;word-break:break-word;line-height:1.5}
+    .result-card .meta{font-size:.7rem;color:#71717a;margin-top:.25rem}
+    .result-card.stt{border-left:3px solid #3b82f6}
+    .result-card.llm{border-left:3px solid #a855f7}
+    .result-card.err{border-left:3px solid #ef4444}
+    .result-card.status{border-left:3px solid #eab308}
+    /* ── Health ── */
+    .health-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;font-size:.78rem}
+    .health-item{background:#0a0a0a;border-radius:6px;padding:.4rem .6rem;display:flex;justify-content:space-between}
+    .health-item .k{color:#a1a1aa}.health-item .v{color:#fff;font-weight:600}
+    /* ── Full width ── */
+    .full{grid-column:1/-1}
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid #555;border-top-color:#22c55e;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-left:.4rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hidden{display:none}
   </style>
 </head>
 <body>
-
-  <h1>🎙 Phase 3.2 — Voice E2E Test</h1>
-  <p class="subtitle">LiveKit + Sarvam STT/TTS Pipeline · Full Roundtrip Tester</p>
+<div class="container">
+  <h1>🎙️ Voice E2E Test — STT → Gemini Debug</h1>
+  <p class="sub">Connect to a LiveKit room, speak Hindi/English, see transcript + LLM reply in real time.</p>
 
   <div class="grid">
-    <!-- LEFT: Controls -->
-    <div>
+
+    <!-- ═══════ LEFT: Controls ═══════ -->
+    <div style="display:flex;flex-direction:column;gap:1rem">
+
+      <!-- Health Check -->
       <div class="panel">
-        <div class="panel-title">Connection</div>
-
-        <div class="status-bar">
-          <span class="dot" id="statusDot"></span>
-          <span id="statusText">Disconnected</span>
+        <h2>📡 Health Check</h2>
+        <button class="btn-blue" id="healthBtn">GET /api/voice/status</button>
+        <div id="healthResult" class="hidden" style="margin-top:.6rem">
+          <div class="health-grid" id="healthGrid"></div>
         </div>
+      </div>
 
-        <div class="field">
-          <label for="backendUrl">Backend Base URL</label>
-          <input type="text" id="backendUrl" value="http://localhost:5000">
-        </div>
-        <div class="field">
-          <label for="roomName">Room Name (optional)</label>
-          <input type="text" id="roomName" placeholder="auto-generated if empty">
-        </div>
-
+      <!-- Session Controls -->
+      <div class="panel">
+        <h2>🔌 Session</h2>
+        <label>Room Name (auto if empty)</label>
+        <input id="roomInput" placeholder="e.g. test-room-1">
+        <label>Simulator Identity (auto if empty)</label>
+        <input id="identityInput" placeholder="e.g. tester-1">
         <div class="btn-row">
-          <button class="btn-connect" id="btnConnect" onclick="handleConnect()">Connect</button>
-          <button class="btn-disconnect" id="btnDisconnect" onclick="handleDisconnect()" disabled>Disconnect</button>
+          <button class="btn-green" id="connectBtn">▶ Connect &amp; Start</button>
+          <button class="btn-red" id="disconnectBtn" disabled>⏹ Disconnect</button>
         </div>
-
-        <div class="mic-status" id="micStatus">
-          <span class="mic-icon">🔇</span>
-          <span>Microphone: not active</span>
+        <div class="status-bar">
+          <span class="dot off" id="statusDot"></span>
+          <span id="statusText">Disconnected</span>
+          <span id="spinnerEl" class="spinner hidden"></span>
+        </div>
+        <div id="partPanel" class="hidden" style="margin-top:.5rem">
+          <label>Participants</label>
+          <ul class="part-list" id="partList"></ul>
         </div>
       </div>
 
-      <!-- Session Info -->
-      <div class="panel" style="margin-top: 12px;">
-        <div class="panel-title">Session Info</div>
-        <div class="info-grid">
-          <div class="info-card">
-            <div class="info-label">Room</div>
-            <div class="info-value" id="infoRoom">—</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Identity</div>
-            <div class="info-value" id="infoIdentity">—</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Agent</div>
-            <div class="info-value" id="infoAgent">—</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">State</div>
-            <div class="info-value" id="infoState">—</div>
-          </div>
+      <!-- Manual Endpoints -->
+      <div class="panel">
+        <h2>🧪 Manual Endpoints</h2>
+        <label>Room Name (for delete/results)</label>
+        <input id="manualRoom" placeholder="paste room name here">
+        <div class="btn-row">
+          <button class="btn-yellow" id="deleteBtn">DELETE Session</button>
+          <button class="btn-ghost" id="pollBtn">GET Results</button>
         </div>
-
-        <div class="panel-title" style="margin-top: 8px;">Participants</div>
-        <ul class="participants" id="participantsList">
-          <li style="color: var(--text-dim); font-style: italic;">No participants</li>
-        </ul>
+        <div id="manualResult" class="log hidden" style="margin-top:.6rem"></div>
       </div>
     </div>
 
-    <!-- RIGHT: Log -->
-    <div class="panel log-panel">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <div class="panel-title" style="margin-bottom: 0;">Event Log</div>
-        <button class="log-clear" onclick="clearLog()">Clear</button>
+    <!-- ═══════ RIGHT: Output ═══════ -->
+    <div style="display:flex;flex-direction:column;gap:1rem">
+
+      <!-- Pipeline Results -->
+      <div class="panel">
+        <h2>📝 Pipeline Output</h2>
+        <p style="font-size:.72rem;color:#71717a;margin-bottom:.5rem">
+          After connecting, speak for ~8 seconds. Results auto-poll from backend.
+        </p>
+        <div id="resultsArea">
+          <div style="color:#555;font-size:.8rem;text-align:center;padding:2rem 0">No results yet. Connect and speak to start.</div>
+        </div>
       </div>
-      <div class="log-area" id="logArea"></div>
+
+      <!-- Event Log -->
+      <div class="panel">
+        <h2>📋 Event Log</h2>
+        <button class="btn-ghost" id="clearLogBtn" style="margin-bottom:.5rem;padding:.3rem .6rem;font-size:.7rem">Clear</button>
+        <div class="log" id="logArea"></div>
+      </div>
+
     </div>
+
   </div>
+</div>
 
-  <div id="remoteAudio"></div>
+<script type="module">
+  import {
+    Room,
+    RoomEvent,
+  } from 'https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.esm.mjs';
 
-<script>
-  // ─────────────────────────────────
-  //  State
-  // ─────────────────────────────────
+  const API = window.location.origin + '/api/voice';
   let room = null;
-  let currentRoomName = null;
-  const audioElements = new Map();
+  let currentRoom = '';
+  let pollTimer = null;
+  let lastEventCount = 0;
 
-  // ─────────────────────────────────
-  //  Logging
-  // ─────────────────────────────────
+  // ── UI Helpers ──
+  const $ = (id) => document.getElementById(id);
+  const setStatus = (state, text) => {
+    $('statusDot').className = `dot ${state}`;
+    $('statusText').textContent = text;
+  };
+  const spinner = (on) => $('spinnerEl').classList.toggle('hidden', !on);
+
   function log(msg, level = 'info') {
-    const area = document.getElementById('logArea');
-    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const entry = document.createElement('div');
-    entry.className = `log-entry log-${level}`;
-    entry.innerHTML = `<span class="log-time">${time}</span><span class="log-msg">${escapeHtml(msg)}</span>`;
-    area.appendChild(entry);
+    const area = $('logArea');
+    const t = new Date().toLocaleTimeString();
+    area.innerHTML += `<div class="${level}"><span class="t">[${t}]</span> ${msg}</div>`;
     area.scrollTop = area.scrollHeight;
   }
 
-  function escapeHtml(s) {
-    const d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
-  }
-
-  function clearLog() {
-    document.getElementById('logArea').innerHTML = '';
-  }
-
-  // ─────────────────────────────────
-  //  UI Helpers
-  // ─────────────────────────────────
-  function setStatus(state, text) {
-    const dot = document.getElementById('statusDot');
-    const txt = document.getElementById('statusText');
-    dot.className = 'dot ' + state;
-    txt.textContent = text;
-    document.getElementById('infoState').textContent = text;
-  }
-
-  function setMic(active) {
-    const el = document.getElementById('micStatus');
-    el.innerHTML = active
-      ? '<span class="mic-icon">🎙</span><span style="color:var(--green)">Microphone: streaming</span>'
-      : '<span class="mic-icon">🔇</span><span>Microphone: not active</span>';
-  }
-
-  function setControls(connecting, connected) {
-    document.getElementById('btnConnect').disabled = connecting || connected;
-    document.getElementById('btnDisconnect').disabled = !connected;
-    document.getElementById('backendUrl').disabled = connected;
-    document.getElementById('roomName').disabled = connected;
-  }
-
-  function resetInfo() {
-    document.getElementById('infoRoom').textContent = '—';
-    document.getElementById('infoIdentity').textContent = '—';
-    document.getElementById('infoAgent').textContent = '—';
-    document.getElementById('infoState').textContent = '—';
-  }
-
   function updateParticipants() {
-    const list = document.getElementById('participantsList');
-    list.innerHTML = '';
+    if (!room) { $('partPanel').classList.add('hidden'); return; }
+    const parts = [
+      { id: room.localParticipant.identity, local: true },
+      ...Array.from(room.remoteParticipants.values()).map(p => ({ id: p.identity, local: false })),
+    ];
+    $('partPanel').classList.remove('hidden');
+    $('partList').innerHTML = parts.map(p => `<li>${p.id}${p.local ? ' <span style="color:#555">(you)</span>' : ''}</li>`).join('');
+  }
 
-    if (!room) {
-      list.innerHTML = '<li style="color:var(--text-dim);font-style:italic;">No participants</li>';
-      return;
+  // ── Render result cards ──
+  function renderResults(data) {
+    const area = $('resultsArea');
+    if (!data || !data.events || data.events.length === 0) return;
+
+    let html = '';
+    for (const ev of data.events) {
+      const time = new Date(ev.ts).toLocaleTimeString();
+      if (ev.type === 'stt') {
+        html += `<div class="result-card stt">
+          <h3>🎤 STT Transcript</h3>
+          <div class="val">${ev.transcript || '<empty>'}</div>
+          <div class="meta">${ev.durationMs}ms · ${time}</div>
+        </div>`;
+      } else if (ev.type === 'llm') {
+        html += `<div class="result-card llm">
+          <h3>🤖 Gemini Reply</h3>
+          <div class="val">${ev.reply}</div>
+          <div class="meta">${ev.durationMs}ms · ${time}</div>
+        </div>`;
+      } else if (ev.type === 'error') {
+        html += `<div class="result-card err">
+          <h3>❌ Error</h3>
+          <div class="val">${ev.message}</div>
+          <div class="meta">${time}</div>
+        </div>`;
+      } else if (ev.type === 'status') {
+        html += `<div class="result-card status">
+          <h3>⏳ Status</h3>
+          <div class="val">${ev.message}</div>
+          <div class="meta">${time}</div>
+        </div>`;
+      }
     }
 
-    // Local participant
-    const lp = room.localParticipant;
-    if (lp) {
-      const li = document.createElement('li');
-      li.innerHTML = `<span class="p-dot"></span>${escapeHtml(lp.identity)} <span class="p-tag">you</span>`;
-      list.appendChild(li);
+    if (data.status === 'done' || data.status === 'error') {
+      html += `<div style="text-align:center;color:#71717a;font-size:.75rem;margin-top:.5rem">Pipeline ${data.status}.</div>`;
     }
 
-    // Remote participants
-    room.remoteParticipants.forEach((p) => {
-      const li = document.createElement('li');
-      const isAgent = p.identity.startsWith('node-agent');
-      const tag = isAgent ? '<span class="p-tag">agent</span>' : '';
-      li.innerHTML = `<span class="p-dot"></span>${escapeHtml(p.identity)} ${tag}`;
-      list.appendChild(li);
-    });
+    area.innerHTML = html;
+  }
 
-    if (list.children.length === 0) {
-      list.innerHTML = '<li style="color:var(--text-dim);font-style:italic;">No participants</li>';
+  // ── Poll results ──
+  async function pollResults() {
+    if (!currentRoom) return;
+    try {
+      const res = await fetch(`${API}/sessions/${encodeURIComponent(currentRoom)}/results`);
+      const data = await res.json();
+      if (data.events && data.events.length !== lastEventCount) {
+        lastEventCount = data.events.length;
+        renderResults(data);
+      }
+      if (data.status === 'done' || data.status === 'error') {
+        stopPolling();
+        log(`Pipeline finished: ${data.status}`, data.status === 'error' ? 'error' : 'info');
+        spinner(false);
+      }
+    } catch (e) {
+      log(`Poll error: ${e.message}`, 'error');
     }
   }
 
-  // ─────────────────────────────────
-  //  Remote Audio
-  // ─────────────────────────────────
-  function attachAudio(track, participantSid) {
-    const container = document.getElementById('remoteAudio');
-    const el = track.attach();
-    el.id = 'audio-' + participantSid + '-' + track.sid;
-    el.autoplay = true;
-    el.volume = 1.0;
-    container.appendChild(el);
-    audioElements.set(track.sid, el);
-    log(`▶ Audio track attached: ${track.sid}`, 'success');
+  function startPolling(roomName) {
+    currentRoom = roomName;
+    lastEventCount = 0;
+    $('resultsArea').innerHTML = '<div style="color:#eab308;font-size:.8rem;text-align:center;padding:1rem 0">⏳ Waiting for pipeline results…</div>';
+    pollTimer = setInterval(pollResults, 800);
   }
 
-  function detachAudio(track) {
-    const el = audioElements.get(track.sid);
-    if (el) {
-      el.srcObject = null;
-      el.remove();
-      audioElements.delete(track.sid);
-      log(`■ Audio track detached: ${track.sid}`, 'warn');
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  // ══════════════════════════════════
+  //  Health Check
+  // ══════════════════════════════════
+  $('healthBtn').addEventListener('click', async () => {
+    $('healthBtn').disabled = true;
+    log('GET /api/voice/status');
+    try {
+      const res = await fetch(`${API}/status`);
+      const data = await res.json();
+      const grid = $('healthGrid');
+      grid.innerHTML = '';
+      const items = [
+        ['Phase', data.phase || '?'],
+        ['LiveKit', data.livekit?.healthy ? '✅ healthy' : '❌ error'],
+        ['Active Sessions', data.activeSessions ?? '?'],
+        ['LIVEKIT_URL', data.env?.LIVEKIT_URL || '?'],
+        ['API_KEY', data.env?.LIVEKIT_API_KEY || '?'],
+        ['API_SECRET', data.env?.LIVEKIT_API_SECRET || '?'],
+      ];
+      for (const [k, v] of items) {
+        grid.innerHTML += `<div class="health-item"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+      }
+      $('healthResult').classList.remove('hidden');
+      log('Health check OK', 'info');
+    } catch (e) {
+      log(`Health check failed: ${e.message}`, 'error');
     }
-  }
+    $('healthBtn').disabled = false;
+  });
 
-  function cleanupAllAudio() {
-    audioElements.forEach((el) => {
-      el.srcObject = null;
-      el.remove();
-    });
-    audioElements.clear();
-  }
-
-  // ─────────────────────────────────
+  // ══════════════════════════════════
   //  Connect
-  // ─────────────────────────────────
-  async function handleConnect() {
-    const baseUrl = document.getElementById('backendUrl').value.trim().replace(/\/$/, '');
-    const roomNameInput = document.getElementById('roomName').value.trim();
+  // ══════════════════════════════════
+  $('connectBtn').addEventListener('click', async () => {
+    $('connectBtn').disabled = true;
+    setStatus('wait', 'Requesting token…');
+    spinner(true);
+    log('POST /api/voice/sessions/initiate');
 
-    setControls(true, false);
-    setStatus('connecting', 'Requesting session...');
-    log('Requesting session from backend...', 'info');
-
-    // Step 1: Call backend
-    let session;
     try {
       const body = {};
-      if (roomNameInput) body.roomName = roomNameInput;
+      const rn = $('roomInput').value.trim();
+      const id = $('identityInput').value.trim();
+      if (rn) body.roomName = rn;
+      if (id) body.simulatorIdentity = id;
 
-      const res = await fetch(`${baseUrl}/api/voice/sessions/initiate`, {
+      const res = await fetch(`${API}/sessions/initiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
 
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`HTTP ${res.status}: ${errText}`);
-      }
+      log(`Room: <b>${data.roomName}</b>`);
+      log(`Simulator: ${data.simulatorIdentity} · Agent: ${data.agentIdentity}`);
+      $('manualRoom').value = data.roomName;
 
-      session = await res.json();
-      log(`Session created: room=${session.roomName}`, 'success');
-      log(`Token received (${session.token.length} chars)`, 'info');
-      log(`Agent identity: ${session.agentIdentity}`, 'info');
-      log(`Simulator identity: ${session.simulatorIdentity}`, 'info');
+      // Connect LiveKit
+      room = new Room({ adaptiveStream: true, dynacast: true });
 
-      currentRoomName = session.roomName;
-      document.getElementById('infoRoom').textContent = session.roomName;
-      document.getElementById('infoIdentity').textContent = session.simulatorIdentity;
-      document.getElementById('infoAgent').textContent = session.agentIdentity;
-
-    } catch (err) {
-      log(`Session request failed: ${err.message}`, 'error');
-      setStatus('error', 'Session failed');
-      setControls(false, false);
-      return;
-    }
-
-    // Step 2: Connect to LiveKit
-    setStatus('connecting', 'Connecting to LiveKit...');
-    log(`Connecting to ${session.livekitUrl}...`, 'info');
-
-    try {
-      room = new LivekitClient.Room({
-        adaptiveStream: true,
-        dynacast: true,
-      });
-
-      // Event handlers
-      room.on(LivekitClient.RoomEvent.Connected, () => {
-        log('Connected to LiveKit room', 'success');
-        setStatus('connected', 'Connected');
-        setControls(false, true);
-        updateParticipants();
-      });
-
-      room.on(LivekitClient.RoomEvent.Disconnected, (reason) => {
-        log(`Disconnected from room: ${reason || 'unknown'}`, 'warn');
-        cleanupAfterDisconnect();
-      });
-
-      room.on(LivekitClient.RoomEvent.Reconnecting, () => {
-        log('Reconnecting...', 'warn');
-        setStatus('connecting', 'Reconnecting...');
-      });
-
-      room.on(LivekitClient.RoomEvent.Reconnected, () => {
-        log('Reconnected', 'success');
-        setStatus('connected', 'Connected');
-      });
-
-      room.on(LivekitClient.RoomEvent.ParticipantConnected, (participant) => {
-        log(`Participant joined: ${participant.identity}`, 'event');
-        updateParticipants();
-      });
-
-      room.on(LivekitClient.RoomEvent.ParticipantDisconnected, (participant) => {
-        log(`Participant left: ${participant.identity}`, 'event');
-        updateParticipants();
-      });
-
-      room.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
-        log(`Track subscribed: ${track.kind} from ${participant.identity}`, 'event');
+      room.on(RoomEvent.ParticipantConnected, (p) => { log(`Joined: ${p.identity}`); updateParticipants(); });
+      room.on(RoomEvent.ParticipantDisconnected, (p) => { log(`Left: ${p.identity}`, 'warn'); updateParticipants(); });
+      room.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
+        log(`Track subscribed: ${track.kind} from ${participant.identity}`);
         if (track.kind === 'audio') {
-          attachAudio(track, participant.sid);
+          const el = track.attach();
+          el.style.display = 'none';
+          document.body.appendChild(el);
         }
       });
-
-      room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
-        log(`Track unsubscribed: ${track.kind} from ${participant.identity}`, 'event');
-        if (track.kind === 'audio') {
-          detachAudio(track);
-        }
+      room.on(RoomEvent.Disconnected, (reason) => {
+        log(`Disconnected: ${reason || 'clean'}`, 'warn');
+        setStatus('off', 'Disconnected');
+        spinner(false);
+        $('connectBtn').disabled = false;
+        $('disconnectBtn').disabled = true;
+        $('partPanel').classList.add('hidden');
+        room = null;
       });
 
-      room.on(LivekitClient.RoomEvent.TrackMuted, (publication, participant) => {
-        log(`Track muted: ${publication.kind} from ${participant.identity}`, 'warn');
-      });
+      setStatus('wait', 'Connecting to LiveKit…');
+      await room.connect(data.livekitUrl, data.token);
+      setStatus('on', `Connected — ${data.roomName}`);
+      log('✅ Connected to LiveKit room');
 
-      room.on(LivekitClient.RoomEvent.TrackUnmuted, (publication, participant) => {
-        log(`Track unmuted: ${publication.kind} from ${participant.identity}`, 'info');
-      });
-
-      room.on(LivekitClient.RoomEvent.ConnectionQualityChanged, (quality, participant) => {
-        if (participant.isLocal) {
-          log(`Connection quality: ${quality}`, quality === 'excellent' ? 'success' : 'info');
-        }
-      });
-
-      // Connect
-      await room.connect(session.livekitUrl, session.token);
-      log('LiveKit connection established', 'success');
-
-      // Step 3: Publish microphone
-      setStatus('connecting', 'Requesting microphone...');
-      log('Requesting microphone access...', 'info');
-
-      await room.localParticipant.setMicrophoneEnabled(true);
-      setMic(true);
-      log('Microphone enabled and publishing', 'success');
-      setStatus('connected', 'Connected');
-      setControls(false, true);
-      updateParticipants();
-
-      // Attach any already-subscribed remote tracks
-      room.remoteParticipants.forEach((participant) => {
-        participant.trackPublications.forEach((pub) => {
-          if (pub.track && pub.kind === 'audio' && pub.isSubscribed) {
-            attachAudio(pub.track, participant.sid);
-          }
-        });
-      });
-
-    } catch (err) {
-      log(`Connection failed: ${err.message}`, 'error');
-      setStatus('error', 'Connection failed');
-      setControls(false, false);
-      room = null;
-    }
-  }
-
-  // ─────────────────────────────────
-  //  Disconnect
-  // ─────────────────────────────────
-  async function handleDisconnect() {
-    log('Disconnecting...', 'warn');
-    if (room) {
       try {
-        room.disconnect(true);
-      } catch (err) {
-        log(`Disconnect error: ${err.message}`, 'error');
+        await room.localParticipant.setMicrophoneEnabled(true);
+        log('🎤 Microphone enabled — speak now (8s capture window)');
+      } catch (micErr) {
+        log(`⚠️ Mic failed: ${micErr.message}`, 'warn');
       }
+
+      updateParticipants();
+      $('disconnectBtn').disabled = false;
+
+      // Start polling for pipeline results
+      startPolling(data.roomName);
+
+    } catch (e) {
+      log(`❌ ${e.message}`, 'error');
+      setStatus('err', 'Failed');
+      spinner(false);
+      $('connectBtn').disabled = false;
     }
-    cleanupAfterDisconnect();
-  }
+  });
 
-  function cleanupAfterDisconnect() {
-    cleanupAllAudio();
-    setMic(false);
-    setStatus('', 'Disconnected');
-    setControls(false, false);
-    resetInfo();
-    updateParticipants();
-    room = null;
-    currentRoomName = null;
-    log('Session ended. Ready for new connection.', 'info');
-  }
+  // ══════════════════════════════════
+  //  Disconnect
+  // ══════════════════════════════════
+  $('disconnectBtn').addEventListener('click', async () => {
+    stopPolling();
+    if (room) { log('Disconnecting…'); await room.disconnect(); room = null; }
+  });
 
-  // ─────────────────────────────────
-  //  Init
-  // ─────────────────────────────────
-  log('Voice E2E Test ready. Enter room name (optional) and click Connect.', 'info');
-  log('The agent will: greet → listen 8s → STT → echo transcript → disconnect.', 'info');
+  // ══════════════════════════════════
+  //  Manual: DELETE session
+  // ══════════════════════════════════
+  $('deleteBtn').addEventListener('click', async () => {
+    const rn = $('manualRoom').value.trim();
+    if (!rn) { log('Enter a room name first', 'warn'); return; }
+    log(`DELETE /api/voice/sessions/${rn}`);
+    try {
+      const res = await fetch(`${API}/sessions/${encodeURIComponent(rn)}`, { method: 'DELETE' });
+      const data = await res.json();
+      $('manualResult').classList.remove('hidden');
+      $('manualResult').textContent = JSON.stringify(data, null, 2);
+      log(`Delete: ${data.message || JSON.stringify(data)}`);
+    } catch (e) {
+      log(`Delete failed: ${e.message}`, 'error');
+    }
+  });
+
+  // ══════════════════════════════════
+  //  Manual: GET results
+  // ══════════════════════════════════
+  $('pollBtn').addEventListener('click', async () => {
+    const rn = $('manualRoom').value.trim();
+    if (!rn) { log('Enter a room name first', 'warn'); return; }
+    log(`GET /api/voice/sessions/${rn}/results`);
+    try {
+      const res = await fetch(`${API}/sessions/${encodeURIComponent(rn)}/results`);
+      const data = await res.json();
+      $('manualResult').classList.remove('hidden');
+      $('manualResult').textContent = JSON.stringify(data, null, 2);
+      renderResults(data);
+      log(`Results: status=${data.status}, events=${data.events?.length || 0}`);
+    } catch (e) {
+      log(`Results failed: ${e.message}`, 'error');
+    }
+  });
+
+  // ══════════════════════════════════
+  //  Clear log
+  // ══════════════════════════════════
+  $('clearLogBtn').addEventListener('click', () => { $('logArea').innerHTML = ''; });
 </script>
-
 </body>
 </html>

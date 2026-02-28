@@ -56,6 +56,20 @@ router.delete('/sessions/:roomName', async (req, res) => {
 });
 
 /**
+ * GET /api/voice/sessions/:roomName/results
+ *
+ * Poll STT/LLM results for a debug session.
+ * Returns: { status: 'running'|'done'|'error', events: [...] }
+ */
+router.get('/sessions/:roomName/results', (req, res) => {
+  const results = voiceAgentService.getSessionResults(req.params.roomName);
+  if (!results) {
+    return res.json({ status: 'pending', events: [] });
+  }
+  res.json(results);
+});
+
+/**
  * GET /api/voice/status
  *
  * Health check — verifies LiveKit credentials and returns agent session count.
