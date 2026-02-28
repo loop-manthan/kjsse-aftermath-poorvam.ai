@@ -1,161 +1,237 @@
-# Phase 3: Voice Interface with Sarvam AI and LiveKit
+# Phase 3: Node-Only Voice Interface (Express + LiveKit + Sarvam + Plivo)
 
-This phase integrates voice capabilities using Sarvam AI for speech-to-text and text-to-speech, and LiveKit for real-time voice communication with the 4 test phone numbers.
-
-## Timeline: Hours 28-40
-
-## Objectives
-
-- Integrate Sarvam AI for STT and TTS
-- Set up LiveKit for voice rooms
-- Build worker voice control interface
-- Build client voice request interface
-- Implement phone number routing
-- Connect voice flows to backend APIs
-- Add SMS notifications via Twilio
+This phase integrates real-time voice capability entirely within the Express.js backend. There is no separate Python microservice. Express acts as both the business logic layer and the real-time voice agent.
 
 ---
 
-## Step 1: Sarvam AI Integration (Hours 28-30)
+## Architecture Overview
 
-### 1.1 Install Dependencies
-
-```bash
-# Backend
-cd backend
-npm install @sarvam/sdk twilio
-
-# Frontend (if needed for web-based voice)
-cd frontend
-npm install @livekit/components-react livekit-client
+```text
++------------------+    PSTN      +------------------+
+|   User (Phone)   | <==========> |      Plivo       |
++------------------+              +--------+---------+
+                                           |
+                                    SIP Trunk Transfer
+                                           |
+                                           v
++------------------+   WebRTC      +------------------+
+|  LiveKit Cloud   | <============>|   Express.js     |
+|  (Audio Room)    |   (SDK Agent) |   (Node Agent)   |
++------------------+               +--------+---------+
+                                            |
+                                   MongoDB + Sarvam AI
 ```
 
-### 1.2 Sarvam Service Setup (`src/services/sarvam.service.js`)
+**Data Flow Summary:**
+1. User calls the Plivo number (PSTN).
+2. Plivo receives the call, sends a webhook to Express.
+3. Express returns a SIP Transfer instruction to Plivo (pointing at LiveKit SIP endpoint).
+4. Plivo transfers the call into a LiveKit room via SIP trunk.
+5. Express Node process connects to the same LiveKit room as a programmatic agent using `livekit-server-sdk`.
+6. Express agent listens to audio, pipes it through Sarvam STT, processes intent, runs job logic, and responds via Sarvam TTS back into the room.
+
+---
+
+## Deployment Requirement ⚠️
+
+> **A publicly accessible URL is REQUIRED for Plivo webhooks.**
+
+Plivo must reach your Express server on a public HTTP endpoint. Localhost will NOT work for real phone calls.
+
+**Options:**
+- `ngrok http 5000` → Use the generated HTTPS URL for Plivo config during development.
+- Deploy to Render, Railway, or Fly.io for the hackathon demo.
+
+---
+
+## Technology Stack
+
+| Component          | Tool                     | Responsibility                                        |
+|--------------------|--------------------------|-------------------------------------------------------|
+| Backend Server     | Express.js (Node 20)     | All logic, webhooks, voice agent, API endpoints       |
+| Database           | MongoDB (Atlas)          | Source of truth for users, jobs, categories           |
+| Telephony          | Plivo                    | PSTN incoming calls, SIP transfer, SMS notifications  |
+| Audio Room         | LiveKit Cloud            | Real-time audio rooms via WebRTC + SIP                |
+| STT / TTS / NLP    | Sarvam AI                | Speech transcription, synthesis, intent extraction    |
+| Language Support   | Hindi + English          | Code-mixed input supported by Sarvam Saaras v3        |
+
+---
+
+## Timeline Overview (Hours 28-40)
+
+| Phase   | Hours     | Focus                                        | Priority |
+|---------|-----------|----------------------------------------------|----------|
+| 3.1     | 28 – 30   | Setup: Plivo + LiveKit SIP bridge validated  | P0       |
+| 3.2     | 30 – 34   | Node voice agent + Sarvam STT/TTS working    | P0       |
+| 3.3     | 34 – 38   | Full Client + Worker voice flows wired       | P0       |
+| 3.4     | 38 – 40   | Edge cases, SMS fallback, demo prep          | P1       |
+
+---
+
+## Developer Split
+
+### Developer A — Backend Logic + Plivo (Hours 28-40)
+
+**P0 Tasks:**
+- `POST /api/webhooks/plivo/incoming` — Receive incoming call, respond with SIP Transfer XML to LiveKit.
+- `POST /api/webhooks/plivo/status` — Handle call status updates.
+- `POST /api/voice/sessions/initiate` — Internal: called by voice agent module to hydrate user context from phone number.
+- `POST /api/voice/jobs/create` — Internal: called by voice agent module after intent is extracted. Runs `$nearSphere` query to find nearest worker. Returns matched worker.
+- `POST /api/voice/jobs/action` — Internal: updates job status when worker accepts/declines.
+- MongoDB Geospatial indexes on `User.location` and `Job.location`.
+- Seed 5 mock workers with coordinates near the hackathon venue.
+
+**P1 Tasks:**
+- Plivo SMS notification when a new job is assigned to a worker.
+- `GET /api/voice/worker/:userId/pending-job` — Returns the current assigned pending job for a worker, called by the voice agent during worker call.
+
+### Developer B — LiveKit Agent + Sarvam (Hours 28-40)
+
+**P0 Tasks:**
+- `src/services/livekit.service.js` — Generate room tokens, join a LiveKit room programmatically on the Node server.
+- `src/services/sarvam.service.js` — STT (audio buffer → transcript), TTS (text → audio buffer), Intent LLM (transcript → JSON intent).
+- `src/services/voiceAgent.service.js` — Core voice state machine. Export a `startVoiceSession(roomName, phoneNumber)` function. This function joins the room and processes the conversation.
+- Wire the Plivo webhook (built by Dev A) to trigger `startVoiceSession`.
+- Implement audio capture from LiveKit track and streaming to Sarvam STT.
+- Implement `playAudio(audioBuffer, track)` to publish TTS output to the LiveKit room.
+
+**P1 Tasks:**
+- Worker voice state machine (parallel to client flow).
+- Hindi fallback if STT returns no transcript.
+
+---
+
+## Node.js Folder Structure
+
+```text
+/backend
+├── server.js
+└── src/
+    ├── controllers/
+    │   └── webhook.controller.js     # Plivo incoming call → SIP transfer logic
+    ├── routes/
+    │   ├── webhook.routes.js         # POST /api/webhooks/plivo/*
+    │   └── voice.routes.js           # Internal voice API routes
+    ├── models/
+    │   ├── User.model.js
+    │   └── Job.model.js
+    ├── services/
+    │   ├── livekit.service.js        # Room creation, token gen, programmatic join
+    │   ├── sarvam.service.js         # STT, TTS, Intent extraction wrappers
+    │   ├── voiceAgent.service.js     # Voice state machine (client + worker flows)
+    │   └── plivo.service.js          # Outbound SMS via Plivo REST API
+    └── utils/
+        ├── distance.js               # Haversine formula
+        └── categoryExtractor.js      # Fallback keyword-matching for categories
+```
+
+---
+
+## Phase 3.1: Plivo → LiveKit SIP Bridge Setup (Hours 28-30)
+
+### Plivo Incoming Webhook Response (Developer A)
+
+Express responds to Plivo with a SIP Transfer XML, redirecting the caller into a LiveKit room.
 
 ```javascript
+// src/controllers/webhook.controller.js
+import { AccessToken } from 'livekit-server-sdk';
+import crypto from 'crypto';
+import voiceAgentService from '../services/voiceAgent.service.js';
+
+export const handleIncomingCall = async (req, res) => {
+  const { From, CallUUID } = req.body;
+  const roomName = `call-${CallUUID}`;
+  
+  // Generate a LiveKit SIP participant token for the caller
+  const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
+    identity: `caller-${From}`
+  });
+  at.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true });
+  const token = await at.toJwt();
+
+  // Trigger Node agent to join the same room (async — do not await here)
+  voiceAgentService.startVoiceSession(roomName, From).catch(console.error);
+
+  // Return Plivo XML to transfer call to LiveKit SIP endpoint
+  const xml = `
+    <Response>
+      <Speak>Connecting you now, please wait.</Speak>
+      <Dial>
+        <SIP authUser="${process.env.LIVEKIT_SIP_USER}" authPassword="${token}">
+          ${process.env.LIVEKIT_SIP_URI}/${roomName}
+        </SIP>
+      </Dial>
+    </Response>
+  `;
+  res.set('Content-Type', 'application/xml').send(xml);
+};
+```
+
+---
+
+## Phase 3.2: Sarvam Service Layer (Hours 30-32) — Developer B
+
+```javascript
+// src/services/sarvam.service.js
 import axios from 'axios';
 import FormData from 'form-data';
-import fs from 'fs';
 
-const SARVAM_API_KEY = process.env.SARVAM_API_KEY;
-const SARVAM_BASE_URL = 'https://api.sarvam.ai';
+const SARVAM_KEY = process.env.SARVAM_API_KEY;
+const BASE_URL = 'https://api.sarvam.ai';
 
 class SarvamService {
-  constructor() {
-    this.client = axios.create({
-      baseURL: SARVAM_BASE_URL,
-      headers: {
-        'Authorization': `Bearer ${SARVAM_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
-  }
 
   // Speech-to-Text
-  async transcribeAudio(audioBuffer, language = 'hi-IN') {
-    try {
-      const formData = new FormData();
-      formData.append('file', audioBuffer, {
-        filename: 'audio.wav',
-        contentType: 'audio/wav'
-      });
-      formData.append('language', language);
-      formData.append('model', 'saaras:v1');
+  async transcribe(audioBuffer, language = 'hi-IN') {
+    const form = new FormData();
+    form.append('file', audioBuffer, { filename: 'audio.wav', contentType: 'audio/wav' });
+    form.append('language_code', language);
+    form.append('model', 'saaras:v1');
 
-      const response = await axios.post(
-        `${SARVAM_BASE_URL}/speech-to-text`,
-        formData,
-        {
-          headers: {
-            ...formData.getHeaders(),
-            'Authorization': `Bearer ${SARVAM_API_KEY}`
-          }
-        }
-      );
-
-      return response.data.transcript;
-    } catch (error) {
-      console.error('Sarvam STT Error:', error.response?.data || error.message);
-      throw error;
-    }
+    const { data } = await axios.post(`${BASE_URL}/speech-to-text`, form, {
+      headers: { ...form.getHeaders(), 'api-subscription-key': SARVAM_KEY }
+    });
+    return data.transcript; // string
   }
 
-  // Text-to-Speech
-  async generateSpeech(text, language = 'hi-IN', speaker = 'meera') {
-    try {
-      const response = await this.client.post('/text-to-speech', {
-        inputs: [text],
-        target_language_code: language,
-        speaker: speaker,
-        pitch: 0,
-        pace: 1.0,
-        loudness: 1.5,
-        speech_sample_rate: 8000,
-        enable_preprocessing: true,
-        model: 'bulbul:v1'
-      });
-
-      // Response contains base64 audio
-      return response.data.audios[0];
-    } catch (error) {
-      console.error('Sarvam TTS Error:', error.response?.data || error.message);
-      throw error;
-    }
+  // Text-to-Speech — returns base64 audio string
+  async synthesize(text, language = 'hi-IN', speaker = 'meera') {
+    const { data } = await axios.post(`${BASE_URL}/text-to-speech`, {
+      inputs: [text],
+      target_language_code: language,
+      speaker,
+      model: 'bulbul:v1',
+      speech_sample_rate: 16000
+    }, {
+      headers: { 'api-subscription-key': SARVAM_KEY }
+    });
+    return Buffer.from(data.audios[0], 'base64'); // audio buffer
   }
 
-  // Text translation (if needed)
-  async translateText(text, sourceLang = 'hi-IN', targetLang = 'en-IN') {
+  // Intent Extraction via Sarvam Chat
+  async extractIntent(transcript) {
+    const SYSTEM_PROMPT = `You are a service dispatcher for India. 
+      Extract the service intent from the user's request (may be Hindi, English or code-mixed).
+      Return ONLY a JSON object: { "category": string, "description": string, "urgency": "high"|"normal" }
+      Categories: plumber, electrician, carpenter, painter, cleaner, mechanic, ac_technician, general`;
+
+    const { data } = await axios.post(`${BASE_URL}/chat/completions`, {
+      model: 'sarvam-2b',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: transcript }
+      ],
+      max_tokens: 150,
+      temperature: 0.2
+    }, {
+      headers: { 'api-subscription-key': SARVAM_KEY }
+    });
+
     try {
-      const response = await this.client.post('/translate', {
-        input: text,
-        source_language_code: sourceLang,
-        target_language_code: targetLang,
-        speaker_gender: 'Male',
-        mode: 'formal',
-        model: 'mayura:v1',
-        enable_preprocessing: false
-      });
-
-      return response.data.translated_text;
-    } catch (error) {
-      console.error('Sarvam Translation Error:', error.response?.data || error.message);
-      throw error;
-    }
-  }
-
-  // NLP for intent extraction
-  async extractIntent(text) {
-    try {
-      // Use Sarvam's chat completion for intent detection
-      const response = await axios.post(
-        process.env.SARVAM_API_URL,
-        {
-          model: 'sarvam-2b',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a service categorization assistant. Extract the service type from user requests. Respond with only the category name: plumber, electrician, carpenter, painter, cleaner, mechanic, ac_technician, pest_control, or general.'
-            },
-            {
-              role: 'user',
-              content: text
-            }
-          ],
-          max_tokens: 50,
-          temperature: 0.3
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${SARVAM_API_KEY}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      return response.data.choices[0].message.content.trim().toLowerCase();
-    } catch (error) {
-      console.error('Sarvam Intent Error:', error.response?.data || error.message);
-      return 'general';
+      return JSON.parse(data.choices[0].message.content.trim());
+    } catch {
+      return { category: 'general', description: transcript, urgency: 'normal' };
     }
   }
 }
@@ -163,954 +239,252 @@ class SarvamService {
 export default new SarvamService();
 ```
 
-### 1.3 Twilio SMS Service (`src/services/twilio.service.js`)
-
-```javascript
-import twilio from 'twilio';
-
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
-
-const client = twilio(accountSid, authToken);
-
-class TwilioService {
-  async sendSMS(to, message) {
-    try {
-      const result = await client.messages.create({
-        body: message,
-        from: twilioPhone,
-        to: to
-      });
-      
-      console.log('SMS sent:', result.sid);
-      return result;
-    } catch (error) {
-      console.error('Twilio SMS Error:', error);
-      throw error;
-    }
-  }
-
-  async sendJobAssignmentSMS(worker, job) {
-    const message = `New job assigned! ${job.category} - ${job.description.substring(0, 50)}... Payment: ₹${job.paymentOffer}. Location: ${job.address}. Call to accept.`;
-    return this.sendSMS(worker.phone, message);
-  }
-
-  async sendJobAcceptedSMS(client, worker, job) {
-    const message = `Your job has been accepted by ${worker.name}. Contact: ${worker.phone}. They will arrive soon.`;
-    return this.sendSMS(client.phone, message);
-  }
-
-  async sendJobCompletedSMS(client, job) {
-    const message = `Job completed! Please rate your experience and process payment of ₹${job.paymentOffer}.`;
-    return this.sendSMS(client.phone, message);
-  }
-}
-
-export default new TwilioService();
-```
-
 ---
 
-## Step 2: LiveKit Setup (Hours 30-32)
+## Phase 3.3: Voice State Machine (Hours 32-38) — Developer B
 
-### 2.1 LiveKit Server Configuration
+### Client Voice Flow
 
-```bash
-# Install LiveKit server (local development)
-# Download from https://livekit.io/
-# Or use LiveKit Cloud
-
-# Environment variables
-LIVEKIT_API_KEY=your_api_key
-LIVEKIT_API_SECRET=your_api_secret
-LIVEKIT_URL=ws://localhost:7880
+```text
+[Room Joined]
+     |
+     v
+ GREET (TTS)
+"Hello, kya problem hai aapki?" (Hello, what is your problem?)
+     |
+     v
+ LISTEN (STT) ← 8 second audio capture window
+     |
+     v
+ PARSE_INTENT (Sarvam LLM)
+ { category: "plumbing", description: "tap is leaking" }
+     |
+     v
+ CREATE_JOB (Internal Express call to job.controller)
+     |
+     +-- No Worker Found? ---> TTS "Koi worker nahi mila, baad mein try karo." --> END
+     |
+     +-- Worker Found? -------> TTS "Aapka [category] worker [name] raasta pe hai." --> END
 ```
 
-### 2.2 LiveKit Service (`src/services/livekit.service.js`)
+### Worker Voice Flow
+
+```text
+[Room Joined]
+     |
+     v
+ IDENTIFY_WORKER (Lookup by phone)
+     |
+     v
+ CHECK_PENDING_JOB (GET /api/voice/worker/:id/pending-job)
+     |
+     +-- No Jobs? -----------> TTS "Abhi koi kaam nahi hai." --> END
+     |
+     +-- Job Found? ----------> TTS "Aapke paas [category] job hai. Accept karo?" --> LISTEN
+                                         |
+                                         v
+                                    PARSE RESPONSE (STT + check for "haan"/"yes")
+                                         |
+                                   Accept?   Reject?
+                                     |           |
+                                  POST action   POST action
+                                  (accept)     (decline)
+                                     |
+                                   TTS "Job accepted. Client ne aapko await kar raha hai."
+```
+
+### voiceAgent.service.js Core Structure
 
 ```javascript
+// src/services/voiceAgent.service.js
+import { Room, RoomEvent, AudioFrame } from 'livekit-client';
 import { AccessToken } from 'livekit-server-sdk';
+import sarvamService from './sarvam.service.js';
+import User from '../models/User.model.js';
+import jobController from '../controllers/job.controller.js';
 
-const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY;
-const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET;
-
-class LiveKitService {
-  generateToken(roomName, participantName, metadata = {}) {
-    const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
-      identity: participantName,
-      metadata: JSON.stringify(metadata)
+class VoiceAgentService {
+  async startVoiceSession(roomName, phoneNumber) {
+    // 1. Generate agent token
+    const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
+      identity: 'node-agent'
     });
+    at.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true });
+    const token = await at.toJwt();
 
-    at.addGrant({
-      roomJoin: true,
-      room: roomName,
-      canPublish: true,
-      canSubscribe: true
-    });
+    // 2. Connect to room
+    const room = new Room();
+    await room.connect(process.env.LIVEKIT_URL, token);
 
-    return at.toJwt();
+    // 3. Identify user from phone number
+    const user = await User.findOne({ phone: phoneNumber });
+
+    if (user?.userType === 'client') {
+      await this.runClientFlow(room, user);
+    } else if (user?.userType === 'worker') {
+      await this.runWorkerFlow(room, user);
+    } else {
+      await this.speak(room, 'Aapka number registered nahi hai.');
+    }
+
+    await room.disconnect();
   }
 
-  createVoiceRoom(userId, userType) {
-    const roomName = `voice-${userId}-${Date.now()}`;
-    const token = this.generateToken(roomName, userId, { userType });
-    
-    return {
-      roomName,
-      token,
-      url: process.env.LIVEKIT_URL
-    };
+  async speak(room, text, lang = 'hi-IN') {
+    const audioBuffer = await sarvamService.synthesize(text, lang);
+    // Publish audio buffer to room track
+    // (Implementation uses LiveKit's LocalAudioTrack.publish())
+  }
+
+  async listen(room, durationMs = 8000) {
+    // Subscribe to remote participant audio track
+    // Collect audio chunks for durationMs
+    // Return accumulated Buffer
+  }
+
+  async runClientFlow(room, user) {
+    await this.speak(room, 'Hello, aapki kya problem hai? Hindi ya English mein batao.');
+    const audio = await this.listen(room, 8000);
+    const transcript = await sarvamService.transcribe(audio);
+    const intent = await sarvamService.extractIntent(transcript);
+    const result = await jobController.createAndMatchJob(user._id, intent);
+
+    if (result.matched) {
+      await this.speak(room, `Aapka ${intent.category} worker ${result.workerName} rasta pe hai, ${result.distanceKm} kilometer door.`);
+    } else {
+      await this.speak(room, 'Maafi, abhi koi worker available nahi hai. Thodi der baad call karo.');
+    }
+  }
+
+  async runWorkerFlow(room, user) {
+    const job = await jobController.getPendingJobForWorker(user._id);
+    if (!job) {
+      await this.speak(room, 'Abhi aapke liye koi kaam nahi hai.');
+      return;
+    }
+    await this.speak(room, `Aapke paas ek ${job.category} ka kaam hai, ${job.distanceKm} km door, ${job.paymentOffer} rupees ka. Accept karo?`);
+    const audio = await this.listen(room, 5000);
+    const transcript = await sarvamService.transcribe(audio);
+    const accepted = /haan|yes|accept|ha/i.test(transcript);
+    await jobController.updateJobAction(user._id, job._id, accepted ? 'accept' : 'decline');
+    await this.speak(room, accepted ? `Kaam accept hua. Client ${job.clientName} ka intezaar kar raha hai.` : 'Theek hai, kaam decline kiya.');
   }
 }
 
-export default new LiveKitService();
+export default new VoiceAgentService();
 ```
 
 ---
 
-## Step 3: Voice Controller & Routes (Hours 32-34)
+## Internal API Contracts (Service Layer — No HTTP needed)
 
-### 3.1 Voice Controller (`src/controllers/voice.controller.js`)
-
-```javascript
-import User from '../models/User.model.js';
-import Job from '../models/Job.model.js';
-import sarvamService from '../services/sarvam.service.js';
-import liveKitService from '../services/livekit.service.js';
-import twilioService from '../services/twilio.service.js';
-import { generateToken } from '../utils/jwt.js';
-import { extractCategory } from '../utils/categoryExtractor.js';
-import { calculateDistance } from '../utils/distance.js';
-
-// Phone number to user mapping
-const TEST_PHONE_NUMBERS = {
-  '+919326418140': null,
-  '+919987300208': null,
-  '+919892884320': null,
-  '+919324769110': null
-};
-
-export const authenticateByPhone = async (req, res) => {
-  try {
-    const { phone } = req.body;
-
-    // Check if it's a test number
-    const formattedPhone = phone.startsWith('+91') ? phone : `+91${phone}`;
-    
-    let user = await User.findOne({ phone: formattedPhone });
-    
-    if (!user) {
-      return res.json({ 
-        isNewUser: true,
-        phone: formattedPhone,
-        message: 'New user detected. Please provide registration details.'
-      });
-    }
-
-    const token = generateToken(user._id);
-    const voiceRoom = liveKitService.createVoiceRoom(user._id.toString(), user.userType);
-
-    res.json({
-      isNewUser: false,
-      token,
-      voiceRoom,
-      user: {
-        id: user._id,
-        name: user.name,
-        userType: user.userType,
-        location: user.location,
-        categories: user.categories,
-        status: user.status
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-export const registerViaVoice = async (req, res) => {
-  try {
-    const { phone, name, userType, location, address, categories } = req.body;
-
-    const user = await User.create({
-      phone,
-      name,
-      userType,
-      location,
-      address,
-      categories: userType === 'worker' ? categories : [],
-      authMethod: 'voice',
-      password: Math.random().toString(36).slice(-8) // Random password for voice users
-    });
-
-    const token = generateToken(user._id);
-    const voiceRoom = liveKitService.createVoiceRoom(user._id.toString(), user.userType);
-
-    res.json({
-      message: 'Registration successful',
-      token,
-      voiceRoom,
-      user: {
-        id: user._id,
-        name: user.name,
-        userType: user.userType
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-export const processClientVoiceRequest = async (req, res) => {
-  try {
-    const { audioBuffer, userId } = req.body;
-
-    // Transcribe audio
-    const transcript = await sarvamService.transcribeAudio(audioBuffer);
-    
-    // Extract category from transcript
-    const category = await extractCategory(transcript);
-    
-    // Get user
-    const user = await User.findById(userId);
-    if (!user || user.userType !== 'client') {
-      return res.status(403).json({ error: 'Invalid user' });
-    }
-
-    // Create job
-    const job = await Job.create({
-      clientId: user._id,
-      description: transcript,
-      paymentOffer: 500, // Default or extract from speech
-      location: user.location,
-      address: user.address,
-      category
-    });
-
-    // Find and assign worker
-    const workers = await User.find({
-      userType: 'worker',
-      status: 'available',
-      categories: category
-    });
-
-    if (workers.length === 0) {
-      const responseText = 'क्षमा करें, इस समय कोई कार्यकर्ता उपलब्ध नहीं है। कृपया बाद में प्रयास करें।';
-      const audioResponse = await sarvamService.generateSpeech(responseText, 'hi-IN');
-      
-      return res.json({
-        success: false,
-        message: 'No workers available',
-        audioResponse,
-        transcript
-      });
-    }
-
-    // Score and assign best worker
-    const scoredWorkers = workers.map(worker => {
-      const distance = calculateDistance(
-        job.location.coordinates,
-        worker.location.coordinates
-      );
-      const score = (100 - distance * 10) * 0.5 + (worker.rating / 5 * 100) * 0.5;
-      return { worker, distance, score };
-    });
-
-    scoredWorkers.sort((a, b) => b.score - a.score);
-    const bestWorker = scoredWorkers[0].worker;
-
-    job.workerId = bestWorker._id;
-    job.status = 'assigned';
-    job.distance = scoredWorkers[0].distance;
-    await job.save();
-
-    // Send SMS to worker
-    await twilioService.sendJobAssignmentSMS(bestWorker, job);
-
-    // Generate voice response
-    const responseText = `आपका अनुरोध प्राप्त हुआ। ${bestWorker.name} को आपका काम सौंपा गया है। वे ${scoredWorkers[0].distance.toFixed(1)} किलोमीटर दूर हैं। उनका संपर्क नंबर ${bestWorker.phone} है।`;
-    const audioResponse = await sarvamService.generateSpeech(responseText, 'hi-IN');
-
-    res.json({
-      success: true,
-      job,
-      worker: {
-        name: bestWorker.name,
-        phone: bestWorker.phone,
-        rating: bestWorker.rating,
-        distance: scoredWorkers[0].distance
-      },
-      transcript,
-      audioResponse
-    });
-  } catch (error) {
-    console.error('Voice request error:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-export const processWorkerVoiceCommand = async (req, res) => {
-  try {
-    const { audioBuffer, userId } = req.body;
-
-    // Transcribe audio
-    const transcript = await sarvamService.transcribeAudio(audioBuffer);
-    const command = transcript.toLowerCase();
-
-    const user = await User.findById(userId);
-    if (!user || user.userType !== 'worker') {
-      return res.status(403).json({ error: 'Invalid user' });
-    }
-
-    // Get assigned jobs
-    const assignedJobs = await Job.find({
-      workerId: user._id,
-      status: 'assigned'
-    }).populate('clientId', 'name phone address');
-
-    if (assignedJobs.length === 0) {
-      const responseText = 'आपके पास कोई नया काम नहीं है।';
-      const audioResponse = await sarvamService.generateSpeech(responseText, 'hi-IN');
-      
-      return res.json({
-        success: true,
-        hasJobs: false,
-        audioResponse,
-        transcript
-      });
-    }
-
-    // Read first job
-    const job = assignedJobs[0];
-    
-    // Check if command is accept/reject
-    if (command.includes('accept') || command.includes('स्वीकार') || command.includes('हां')) {
-      job.status = 'accepted';
-      job.acceptedAt = new Date();
-      await job.save();
-
-      await User.findByIdAndUpdate(user._id, { status: 'busy' });
-      await twilioService.sendJobAcceptedSMS(job.clientId, user, job);
-
-      const responseText = `काम स्वीकार किया गया। ग्राहक का नाम ${job.clientId.name} है। पता: ${job.clientId.address}। संपर्क: ${job.clientId.phone}।`;
-      const audioResponse = await sarvamService.generateSpeech(responseText, 'hi-IN');
-
-      return res.json({
-        success: true,
-        action: 'accepted',
-        job,
-        audioResponse,
-        transcript
-      });
-    } else if (command.includes('skip') || command.includes('अस्वीकार') || command.includes('नहीं')) {
-      job.status = 'pending';
-      job.workerId = null;
-      await job.save();
-
-      const responseText = 'काम अस्वीकार किया गया। अगला काम खोज रहे हैं।';
-      const audioResponse = await sarvamService.generateSpeech(responseText, 'hi-IN');
-
-      return res.json({
-        success: true,
-        action: 'rejected',
-        audioResponse,
-        transcript
-      });
-    } else {
-      // Read job details
-      const responseText = `आपके पास ${job.category} का काम है। विवरण: ${job.description}। भुगतान: ${job.paymentOffer} रुपये। दूरी: ${job.distance} किलोमीटर। स्वीकार करने के लिए "हां" कहें या अस्वीकार करने के लिए "नहीं" कहें।`;
-      const audioResponse = await sarvamService.generateSpeech(responseText, 'hi-IN');
-
-      return res.json({
-        success: true,
-        action: 'read_job',
-        job,
-        audioResponse,
-        transcript
-      });
-    }
-  } catch (error) {
-    console.error('Worker voice command error:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-export const getVoiceToken = async (req, res) => {
-  try {
-    const { userId } = req.body;
-    
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const voiceRoom = liveKitService.createVoiceRoom(userId, user.userType);
-    
-    res.json(voiceRoom);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-export const completeJobViaVoice = async (req, res) => {
-  try {
-    const { jobId, userId } = req.body;
-
-    const job = await Job.findById(jobId).populate('clientId');
-    if (!job || job.workerId.toString() !== userId) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
-
-    job.status = 'completed';
-    job.completedAt = new Date();
-    await job.save();
-
-    await User.findByIdAndUpdate(userId, { status: 'available' });
-    await twilioService.sendJobCompletedSMS(job.clientId, job);
-
-    const responseText = 'काम पूरा हो गया है। धन्यवाद।';
-    const audioResponse = await sarvamService.generateSpeech(responseText, 'hi-IN');
-
-    res.json({
-      success: true,
-      job,
-      audioResponse
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-```
-
-### 3.2 Voice Routes (`src/routes/voice.routes.js`)
+Since everything runs within Express, voice logic calls controller functions directly (not via HTTP). These are the internal function signatures:
 
 ```javascript
-import express from 'express';
-import multer from 'multer';
-import {
-  authenticateByPhone,
-  registerViaVoice,
-  processClientVoiceRequest,
-  processWorkerVoiceCommand,
-  getVoiceToken,
-  completeJobViaVoice
-} from '../controllers/voice.controller.js';
+// job.controller.js exports for use by voiceAgent.service.js
 
-const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+// Creates job + runs $nearSphere matching. Returns { matched, workerName, distanceKm, jobId }
+export const createAndMatchJob = (clientId, intent) => { ... };
 
-router.post('/authenticate', authenticateByPhone);
-router.post('/register', registerViaVoice);
-router.post('/client-request', upload.single('audio'), processClientVoiceRequest);
-router.post('/worker-command', upload.single('audio'), processWorkerVoiceCommand);
-router.post('/get-token', getVoiceToken);
-router.post('/complete-job', completeJobViaVoice);
+// Returns the first "assigned" job for a worker with client details
+export const getPendingJobForWorker = (workerId) => { ... };
 
-export default router;
+// Sets job.status = 'accepted' or re-queues it
+export const updateJobAction = (workerId, jobId, action) => { ... };
 ```
 
 ---
 
-## Step 4: Frontend Voice Components (Hours 34-37)
-
-### 4.1 Voice Interface Component (`src/components/voice/VoiceInterface.jsx`)
+## Phase 3.4: SMS Fallback via Plivo (Hours 38-40) — Developer A
 
 ```javascript
-import { useState, useEffect, useRef } from 'react';
-import { Room, RoomEvent } from 'livekit-client';
-import { Mic, MicOff, Phone, PhoneOff } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import api from '../../api/client';
-import toast from 'react-hot-toast';
+// src/services/plivo.service.js
+import plivo from 'plivo';
 
-const VoiceInterface = ({ onClose }) => {
-  const { user } = useAuth();
-  const [room, setRoom] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
+const client = new plivo.Client(process.env.PLIVO_AUTH_ID, process.env.PLIVO_AUTH_TOKEN);
 
-  useEffect(() => {
-    connectToRoom();
-    return () => {
-      if (room) {
-        room.disconnect();
-      }
-    };
-  }, []);
-
-  const connectToRoom = async () => {
-    try {
-      const { data } = await api.post('/voice/get-token', {
-        userId: user.id
-      });
-
-      const newRoom = new Room();
-      
-      newRoom.on(RoomEvent.Connected, () => {
-        setIsConnected(true);
-        toast.success('Voice connected');
-      });
-
-      newRoom.on(RoomEvent.Disconnected, () => {
-        setIsConnected(false);
-        toast.info('Voice disconnected');
-      });
-
-      await newRoom.connect(data.url, data.token);
-      setRoom(newRoom);
-    } catch (error) {
-      console.error('Error connecting to voice room:', error);
-      toast.error('Failed to connect voice');
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        audioChunksRef.current = [];
-        await processVoiceCommand(audioBlob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      mediaRecorderRef.current = mediaRecorder;
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      toast.error('Microphone access denied');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const processVoiceCommand = async (audioBlob) => {
-    try {
-      const formData = new FormData();
-      formData.append('audio', audioBlob);
-      formData.append('userId', user.id);
-
-      const endpoint = user.userType === 'client' 
-        ? '/voice/client-request' 
-        : '/voice/worker-command';
-
-      const { data } = await api.post(endpoint, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-
-      // Play audio response
-      if (data.audioResponse) {
-        playAudioResponse(data.audioResponse);
-      }
-
-      toast.success(data.message || 'Command processed');
-    } catch (error) {
-      console.error('Error processing voice:', error);
-      toast.error('Failed to process voice command');
-    }
-  };
-
-  const playAudioResponse = (base64Audio) => {
-    const audio = new Audio(`data:audio/wav;base64,${base64Audio}`);
-    audio.play();
-  };
-
-  const toggleMute = () => {
-    if (room) {
-      room.localParticipant.setMicrophoneEnabled(isMuted);
-      setIsMuted(!isMuted);
-    }
-  };
-
-  const disconnect = () => {
-    if (room) {
-      room.disconnect();
-    }
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="card w-96 bg-base-100 shadow-xl">
-        <div className="card-body items-center text-center">
-          <h2 className="card-title mb-4">Voice Interface</h2>
-          
-          <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-6 ${
-            isConnected ? 'bg-success' : 'bg-error'
-          } ${isRecording ? 'animate-pulse' : ''}`}>
-            {isRecording ? (
-              <Mic size={64} className="text-white" />
-            ) : (
-              <MicOff size={64} className="text-white" />
-            )}
-          </div>
-
-          <p className="mb-4">
-            {isConnected ? 'Connected' : 'Connecting...'}
-          </p>
-
-          <div className="flex gap-4">
-            <button
-              className={`btn btn-circle btn-lg ${isRecording ? 'btn-error' : 'btn-primary'}`}
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={!isConnected}
-            >
-              {isRecording ? <MicOff size={32} /> : <Mic size={32} />}
-            </button>
-
-            <button
-              className="btn btn-circle btn-lg btn-outline"
-              onClick={toggleMute}
-              disabled={!isConnected}
-            >
-              {isMuted ? <MicOff size={32} /> : <Mic size={32} />}
-            </button>
-
-            <button
-              className="btn btn-circle btn-lg btn-error"
-              onClick={disconnect}
-            >
-              <PhoneOff size={32} />
-            </button>
-          </div>
-
-          <p className="text-sm text-gray-500 mt-4">
-            {user.userType === 'client' 
-              ? 'Press mic to describe your problem'
-              : 'Press mic to accept or reject jobs'}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+export const sendSMS = async (to, message) => {
+  return client.messages.create({
+    src: process.env.PLIVO_PHONE_NUMBER,
+    dst: to,
+    text: message
+  });
 };
 
-export default VoiceInterface;
-```
-
-### 4.2 Add Voice Button to Dashboards
-
-**Client Dashboard** - Add to navbar:
-```javascript
-import { Phone } from 'lucide-react';
-import VoiceInterface from '../components/voice/VoiceInterface';
-
-const [showVoice, setShowVoice] = useState(false);
-
-// In navbar
-<button 
-  className="btn btn-primary btn-circle"
-  onClick={() => setShowVoice(true)}
->
-  <Phone size={24} />
-</button>
-
-{showVoice && <VoiceInterface onClose={() => setShowVoice(false)} />}
-```
-
-**Worker Dashboard** - Same addition
-
----
-
-## Step 5: Phone Call Integration (Hours 37-39)
-
-### 5.1 Twilio Voice Webhook Handler (`src/controllers/twilio.controller.js`)
-
-```javascript
-import twilio from 'twilio';
-import User from '../models/User.model.js';
-import sarvamService from '../services/sarvam.service.js';
-
-const VoiceResponse = twilio.twiml.VoiceResponse;
-
-export const handleIncomingCall = async (req, res) => {
-  const twiml = new VoiceResponse();
-  const from = req.body.From;
-
-  try {
-    // Check if user exists
-    const user = await User.findOne({ phone: from });
-
-    if (!user) {
-      // New user registration flow
-      twiml.say({ language: 'hi-IN' }, 'नमस्ते। आप पूर्वम डॉट ए आई में नए हैं।');
-      twiml.gather({
-        input: 'speech',
-        language: 'hi-IN',
-        action: '/api/twilio/register-response',
-        method: 'POST'
-      }).say('क्या आप ग्राहक हैं या कार्यकर्ता? कृपया बोलें।');
-    } else {
-      // Existing user
-      if (user.userType === 'client') {
-        twiml.say({ language: 'hi-IN' }, `नमस्ते ${user.name}। अपनी समस्या बताएं।`);
-        twiml.gather({
-          input: 'speech',
-          language: 'hi-IN',
-          action: '/api/twilio/client-request',
-          method: 'POST'
-        });
-      } else {
-        twiml.say({ language: 'hi-IN' }, `नमस्ते ${user.name}। आपके काम सुन रहे हैं।`);
-        twiml.redirect('/api/twilio/worker-jobs');
-      }
-    }
-
-    res.type('text/xml');
-    res.send(twiml.toString());
-  } catch (error) {
-    console.error('Twilio webhook error:', error);
-    twiml.say('क्षमा करें, कुछ गलत हो गया। कृपया बाद में प्रयास करें।');
-    res.type('text/xml');
-    res.send(twiml.toString());
-  }
+// Called by job.controller.js after match
+export const notifyWorkerSMS = async (worker, job) => {
+  const msg = `Naya kaam mila! ${job.category} - ${job.address}. Payment: Rs ${job.paymentOffer}. Call karo accept ke liye.`;
+  return sendSMS(worker.phone, msg);
 };
-
-export const handleClientRequest = async (req, res) => {
-  const twiml = new VoiceResponse();
-  const speechResult = req.body.SpeechResult;
-  const from = req.body.From;
-
-  try {
-    const user = await User.findOne({ phone: from });
-    
-    // Process the request (similar to voice controller logic)
-    const category = await extractCategory(speechResult);
-    // ... create job and assign worker ...
-
-    twiml.say({ language: 'hi-IN' }, 'आपका अनुरोध प्राप्त हुआ। कार्यकर्ता जल्द ही संपर्क करेंगे।');
-    twiml.hangup();
-
-    res.type('text/xml');
-    res.send(twiml.toString());
-  } catch (error) {
-    console.error('Client request error:', error);
-    twiml.say('क्षमा करें, अनुरोध प्रोसेस नहीं हो सका।');
-    res.type('text/xml');
-    res.send(twiml.toString());
-  }
-};
-
-export const handleWorkerJobs = async (req, res) => {
-  const twiml = new VoiceResponse();
-  const from = req.body.From;
-
-  try {
-    const user = await User.findOne({ phone: from });
-    const jobs = await Job.find({ workerId: user._id, status: 'assigned' })
-      .populate('clientId');
-
-    if (jobs.length === 0) {
-      twiml.say({ language: 'hi-IN' }, 'आपके पास कोई नया काम नहीं है।');
-      twiml.hangup();
-    } else {
-      const job = jobs[0];
-      twiml.say({ language: 'hi-IN' }, 
-        `${job.category} का काम। ${job.description}। भुगतान ${job.paymentOffer} रुपये।`
-      );
-      twiml.gather({
-        input: 'speech',
-        language: 'hi-IN',
-        action: '/api/twilio/worker-response',
-        method: 'POST'
-      }).say('स्वीकार करने के लिए हां कहें या अस्वीकार करने के लिए नहीं।');
-    }
-
-    res.type('text/xml');
-    res.send(twiml.toString());
-  } catch (error) {
-    console.error('Worker jobs error:', error);
-    twiml.say('क्षमा करें, काम नहीं मिल सके।');
-    res.type('text/xml');
-    res.send(twiml.toString());
-  }
-};
-```
-
-### 5.2 Twilio Routes (`src/routes/twilio.routes.js`)
-
-```javascript
-import express from 'express';
-import {
-  handleIncomingCall,
-  handleClientRequest,
-  handleWorkerJobs
-} from '../controllers/twilio.controller.js';
-
-const router = express.Router();
-
-router.post('/incoming-call', handleIncomingCall);
-router.post('/client-request', handleClientRequest);
-router.post('/worker-jobs', handleWorkerJobs);
-router.post('/register-response', handleRegisterResponse);
-router.post('/worker-response', handleWorkerResponse);
-
-export default router;
-```
-
-### 5.3 Add to server.js
-
-```javascript
-import twilioRoutes from './src/routes/twilio.routes.js';
-
-app.use('/api/twilio', twilioRoutes);
 ```
 
 ---
 
-## Step 6: Testing & Environment Setup (Hours 39-40)
+## Environment Variables Required
 
-### 6.1 Environment Variables
+```env
+# MongoDB
+MONGO_URI=mongodb+srv://...
 
-Add to `.env`:
-```
+# JWT
+JWT_SECRET=your_secret
+PORT=5000
+FRONTEND_URL=http://localhost:5173
+
 # Sarvam AI
-SARVAM_API_KEY=sk_n4sm3lup_H5D5ELgmNy3sZPnQF4bcmGsT
-SARVAM_API_URL=https://api.sarvam.ai/v1/chat/completions
+SARVAM_API_KEY=sk_...
 
-# LiveKit
-LIVEKIT_API_KEY=your_livekit_key
-LIVEKIT_API_SECRET=your_livekit_secret
-LIVEKIT_URL=wss://your-livekit-server.com
+# LiveKit Cloud
+LIVEKIT_API_KEY=APIxxxx
+LIVEKIT_API_SECRET=your_secret
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_SIP_URI=sip:your-project.sip.livekit.cloud
+LIVEKIT_SIP_USER=livekit
 
-# Twilio
-TWILIO_ACCOUNT_SID=your_account_sid
-TWILIO_AUTH_TOKEN=your_auth_token
-TWILIO_PHONE_NUMBER=+1234567890
+# Plivo
+PLIVO_AUTH_ID=MAXXXXXXXXX
+PLIVO_AUTH_TOKEN=xxxxxxxx
+PLIVO_PHONE_NUMBER=+91xxxxxxxxxx
+
+# Public URL (for Plivo webhooks — use ngrok in dev)
+PUBLIC_URL=https://your-ngrok-url.ngrok.io
 ```
-
-### 6.2 Test Phone Numbers Configuration
-
-Create test user accounts for the 4 numbers:
-```javascript
-// Script: scripts/setup-test-users.js
-import mongoose from 'mongoose';
-import User from '../src/models/User.model.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const testUsers = [
-  {
-    phone: '+919326418140',
-    name: 'Test Client 1',
-    userType: 'client',
-    location: { type: 'Point', coordinates: [72.8777, 19.0760] },
-    address: 'Mumbai, Maharashtra',
-    authMethod: 'voice'
-  },
-  {
-    phone: '+919987300208',
-    name: 'Test Worker 1',
-    userType: 'worker',
-    categories: ['plumber', 'electrician'],
-    location: { type: 'Point', coordinates: [72.8800, 19.0800] },
-    address: 'Mumbai, Maharashtra',
-    authMethod: 'voice'
-  },
-  {
-    phone: '+919892884320',
-    name: 'Test Client 2',
-    userType: 'client',
-    location: { type: 'Point', coordinates: [72.8850, 19.0850] },
-    address: 'Mumbai, Maharashtra',
-    authMethod: 'voice'
-  },
-  {
-    phone: '+919324769110',
-    name: 'Test Worker 2',
-    userType: 'worker',
-    categories: ['carpenter', 'painter'],
-    location: { type: 'Point', coordinates: [72.8900, 19.0900] },
-    address: 'Mumbai, Maharashtra',
-    authMethod: 'voice'
-  }
-];
-
-async function setupTestUsers() {
-  await mongoose.connect(process.env.MONGO_URI);
-  
-  for (const userData of testUsers) {
-    const existing = await User.findOne({ phone: userData.phone });
-    if (!existing) {
-      await User.create({ ...userData, password: 'test123' });
-      console.log(`Created user: ${userData.name}`);
-    }
-  }
-  
-  console.log('Test users setup complete');
-  process.exit(0);
-}
-
-setupTestUsers();
-```
-
-Run: `node scripts/setup-test-users.js`
 
 ---
 
 ## Testing Checklist
 
-### Voice Interface Testing
+### Phase 3.1 — Telephony Bridge
+- [ ] Plivo app is configured with webhook URL: `{PUBLIC_URL}/api/webhooks/plivo/incoming`.
+- [ ] Dialing the Plivo number triggers `handleIncomingCall` in Express.
+- [ ] Express returns valid SIP Transfer XML without errors.
+- [ ] LiveKit Cloud dashboard shows a new room created on each call.
 
-1. **Sarvam AI**
-   - [ ] STT converts Hindi/English speech correctly
-   - [ ] TTS generates clear audio responses
-   - [ ] Intent extraction works for job categories
+### Phase 3.2 — Sarvam Service
+- [ ] `sarvamService.transcribe(audioBuffer)` returns correct Hindi text.
+- [ ] `sarvamService.synthesize("Namaste")` returns a valid audio buffer.
+- [ ] `sarvamService.extractIntent("Mera tap leak kar raha hai")` returns `{ category: "plumbing", ... }`.
 
-2. **LiveKit**
-   - [ ] Voice rooms connect successfully
-   - [ ] Audio quality is acceptable
-   - [ ] Multiple participants can join
+### Phase 3.3 — Voice Agent
+- [ ] `voiceAgentService.startVoiceSession(roomName, phone)` connects to LiveKit without error.
+- [ ] Agent speaks the greeting and audio is heard on the caller's phone.
+- [ ] Agent listens for 8 seconds and returns a buffer.
+- [ ] Full client flow runs end-to-end: Problem → Job Created → Worker Matched → Confirmation spoken.
+- [ ] Full worker flow runs: Job read → Accept spoken → DB updated.
 
-3. **Client Voice Flow**
-   - [ ] Call test number 1 or 3
-   - [ ] Describe problem in Hindi/English
-   - [ ] Receive worker assignment confirmation
-   - [ ] Get SMS with worker details
-
-4. **Worker Voice Flow**
-   - [ ] Call test number 2 or 4
-   - [ ] Hear assigned job details
-   - [ ] Accept job via voice command
-   - [ ] Receive SMS confirmation
-
-5. **Twilio Integration**
-   - [ ] Incoming calls route correctly
-   - [ ] SMS notifications sent
-   - [ ] Voice responses play clearly
+### Phase 3.4 — SMS
+- [ ] Worker receives SMS within 5 seconds of job assignment.
+- [ ] SMS content is in Hindi and includes job category + payment offer.
 
 ---
 
-## Deliverables
+## Demo Day Checklist (Must be GREEN before demo)
 
-✅ Sarvam AI integration (STT, TTS, NLP)
-✅ LiveKit voice rooms setup
-✅ Client voice request flow
-✅ Worker voice control flow
-✅ Phone number routing for test numbers
-✅ Twilio SMS notifications
-✅ Voice interface UI components
-✅ Complete voice-to-backend integration
-
----
-
-## Next Phase
-
-Proceed to **Phase 4: Payment Integration, Ratings, and Final Integration**
+- [ ] Express server is deployed and publicly accessible.
+- [ ] MongoDB has 5 mock workers seeded with GPS coordinates within 5km of demo venue.
+- [ ] Plivo number is active and webhooks point to deployed URL.
+- [ ] LiveKit SIP trunk is connected and functional.
+- [ ] One complete call demo tested end-to-end 1 hour before presentation.
+- [ ] Client voice scenario works: call in → speak → job assigned → confirmation heard.
+- [ ] Show MongoDB `jobs` collection update live on screen after call.
+- [ ] Backup: have ngrok URL ready as a fallback if deployment fails.
