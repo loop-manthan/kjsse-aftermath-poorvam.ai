@@ -8,24 +8,14 @@
 
       at server.js:38:23
 
-node.exe : (node:30240) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+node.exe : (node:32172) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
 At line:1 char:1
 + & "C:\Program Files\nodejs/node.exe" "C:\Users\omupa\AppData\Roaming\ ...
 + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ((node:30240) Ex...nge at any time:String) [], RemoteException
+    + CategoryInfo          : NotSpecified: ((node:32172) Ex...nge at any time:String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
  
 (Use `node --trace-warnings ...` to show where the warning was created)
-  console.log
-    ≡ƒÜÇ Server running on port 5000
-
-      at Server.<anonymous> (server.js:66:11)
-
-  console.log
-    ≡ƒôì Environment: test
-
-      at Server.<anonymous> (server.js:67:11)
-
   console.log
     [VoiceAgent] Starting session for room: test-room-1
 
@@ -42,12 +32,12 @@ At line:1 char:1
       at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:112:15)
 
   console.log
-    [VoiceAgent] Starting session for room: room-1772284896014
+    [VoiceAgent] Starting session for room: room-1772285906223
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:64:13)
 
   console.log
-    [VoiceAgent] Connected to room: room-1772284896014
+    [VoiceAgent] Connected to room: room-1772285906223
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:82:15)
 
@@ -92,7 +82,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_c8982ad9-3b40-437f-bc31-3486248de944'
+        request_id: '20260228_053e791c-1ba6-447a-a8ee-d35dbf9de5cd'
       }
     }
 
@@ -133,7 +123,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_f1ee02b6-48fd-4b84-a155-ea2bd9bc90a5'
+        request_id: '20260228_a7abc4fb-495a-44db-9deb-1a7e1bd24dc8'
       }
     }
 
@@ -189,7 +179,48 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_cfb53ba9-43ef-48f6-8c81-fa94cb4a86cd'
+        request_id: '20260228_66a745ec-f576-4a1c-9796-7b4726df764e'
+      }
+    }
+
+    [0m [90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m 123 |[39m       } [36melse[39m {
+    [31m[1m>[22m[39m[90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 125 |[39m       }
+     [90m 126 |[39m       [36mreturn[39m [36mnull[39m[33m;[39m
+     [90m 127 |[39m     } [36mfinally[39m {[0m
+
+      at SarvamService.textToSpeech (src/services/sarvam.service.js:124:17)
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:238:25)
+      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
+
+  console.error
+    [VoiceAgent] TTS returned null. Skipping playback.
+
+    [0m [90m 242 |[39m
+     [90m 243 |[39m       [36mif[39m ([33m![39mwavBuffer) {
+    [31m[1m>[22m[39m[90m 244 |[39m         console[33m.[39merror([32m'[VoiceAgent] TTS returned null. Skipping playback.'[39m)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 245 |[39m         [36mreturn[39m[33m;[39m
+     [90m 246 |[39m       }
+     [90m 247 |[39m[0m
+
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:244:17)
+      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
+
+  console.log
+    [VoiceAgent] Waiting for remote audio...
+
+      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:116:15)
+
+  console.error
+    [Sarvam] TTS failed: {
+      error: {
+        message: 'Validation Error(s):\n' +
+          "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
+        code: 'invalid_request_error',
+        request_id: '20260228_2d8cca14-4de3-43d6-97d4-e8ebb640069d'
       }
     }
 
@@ -243,48 +274,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_32756008-2026-4859-a2fb-28e2f650d735'
-      }
-    }
-
-    [0m [90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
-     [90m 123 |[39m       } [36melse[39m {
-    [31m[1m>[22m[39m[90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
-     [90m     |[39m                 [31m[1m^[22m[39m
-     [90m 125 |[39m       }
-     [90m 126 |[39m       [36mreturn[39m [36mnull[39m[33m;[39m
-     [90m 127 |[39m     } [36mfinally[39m {[0m
-
-      at SarvamService.textToSpeech (src/services/sarvam.service.js:124:17)
-      at VoiceAgentService._speak (src/services/voiceAgent.service.js:238:25)
-      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
-
-  console.error
-    [VoiceAgent] TTS returned null. Skipping playback.
-
-    [0m [90m 242 |[39m
-     [90m 243 |[39m       [36mif[39m ([33m![39mwavBuffer) {
-    [31m[1m>[22m[39m[90m 244 |[39m         console[33m.[39merror([32m'[VoiceAgent] TTS returned null. Skipping playback.'[39m)[33m;[39m
-     [90m     |[39m                 [31m[1m^[22m[39m
-     [90m 245 |[39m         [36mreturn[39m[33m;[39m
-     [90m 246 |[39m       }
-     [90m 247 |[39m[0m
-
-      at VoiceAgentService._speak (src/services/voiceAgent.service.js:244:17)
-      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
-
-  console.log
-    [VoiceAgent] Waiting for remote audio...
-
-      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:116:15)
-
-  console.error
-    [Sarvam] TTS failed: {
-      error: {
-        message: 'Validation Error(s):\n' +
-          "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
-        code: 'invalid_request_error',
-        request_id: '20260228_ee58243c-301b-4f8e-a071-b72702bec7a9'
+        request_id: '20260228_5c83483e-18ef-4622-95e8-43e9683fbe00'
       }
     }
 
@@ -320,12 +310,12 @@ At line:1 char:1
       at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:116:15)
 
   console.log
-    [VoiceAgent] Starting session for room: room-1772284896353
+    [VoiceAgent] Starting session for room: room-1772285906620
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:64:13)
 
   console.log
-    [VoiceAgent] Connected to room: room-1772284896353
+    [VoiceAgent] Connected to room: room-1772285906620
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:82:15)
 
@@ -335,12 +325,12 @@ At line:1 char:1
       at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:112:15)
 
   console.log
-    [VoiceAgent] Starting session for room: room-1772284896381
+    [VoiceAgent] Starting session for room: room-1772285906651
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:64:13)
 
   console.log
-    [VoiceAgent] Connected to room: room-1772284896381
+    [VoiceAgent] Connected to room: room-1772285906651
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:82:15)
 
@@ -348,88 +338,6 @@ At line:1 char:1
     [VoiceAgent] Speaking greeting...
 
       at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:112:15)
-
-  console.error
-    [Sarvam] TTS failed: {
-      error: {
-        message: 'Validation Error(s):\n' +
-          "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
-        code: 'invalid_request_error',
-        request_id: '20260228_09d5eb0e-8af4-4f3d-bd90-7d31b8fe5d54'
-      }
-    }
-
-    [0m [90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
-     [90m 123 |[39m       } [36melse[39m {
-    [31m[1m>[22m[39m[90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
-     [90m     |[39m                 [31m[1m^[22m[39m
-     [90m 125 |[39m       }
-     [90m 126 |[39m       [36mreturn[39m [36mnull[39m[33m;[39m
-     [90m 127 |[39m     } [36mfinally[39m {[0m
-
-      at SarvamService.textToSpeech (src/services/sarvam.service.js:124:17)
-      at VoiceAgentService._speak (src/services/voiceAgent.service.js:238:25)
-      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
-
-  console.error
-    [VoiceAgent] TTS returned null. Skipping playback.
-
-    [0m [90m 242 |[39m
-     [90m 243 |[39m       [36mif[39m ([33m![39mwavBuffer) {
-    [31m[1m>[22m[39m[90m 244 |[39m         console[33m.[39merror([32m'[VoiceAgent] TTS returned null. Skipping playback.'[39m)[33m;[39m
-     [90m     |[39m                 [31m[1m^[22m[39m
-     [90m 245 |[39m         [36mreturn[39m[33m;[39m
-     [90m 246 |[39m       }
-     [90m 247 |[39m[0m
-
-      at VoiceAgentService._speak (src/services/voiceAgent.service.js:244:17)
-      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
-
-  console.log
-    [VoiceAgent] Waiting for remote audio...
-
-      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:116:15)
-
-  console.error
-    [Sarvam] TTS failed: {
-      error: {
-        message: 'Validation Error(s):\n' +
-          "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
-        code: 'invalid_request_error',
-        request_id: '20260228_89204580-2cbf-49a1-a9c2-7a86478d0aab'
-      }
-    }
-
-    [0m [90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
-     [90m 123 |[39m       } [36melse[39m {
-    [31m[1m>[22m[39m[90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
-     [90m     |[39m                 [31m[1m^[22m[39m
-     [90m 125 |[39m       }
-     [90m 126 |[39m       [36mreturn[39m [36mnull[39m[33m;[39m
-     [90m 127 |[39m     } [36mfinally[39m {[0m
-
-      at SarvamService.textToSpeech (src/services/sarvam.service.js:124:17)
-      at VoiceAgentService._speak (src/services/voiceAgent.service.js:238:25)
-      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
-
-  console.error
-    [VoiceAgent] TTS returned null. Skipping playback.
-
-    [0m [90m 242 |[39m
-     [90m 243 |[39m       [36mif[39m ([33m![39mwavBuffer) {
-    [31m[1m>[22m[39m[90m 244 |[39m         console[33m.[39merror([32m'[VoiceAgent] TTS returned null. Skipping playback.'[39m)[33m;[39m
-     [90m     |[39m                 [31m[1m^[22m[39m
-     [90m 245 |[39m         [36mreturn[39m[33m;[39m
-     [90m 246 |[39m       }
-     [90m 247 |[39m[0m
-
-      at VoiceAgentService._speak (src/services/voiceAgent.service.js:244:17)
-      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
-
-  console.log
-    [VoiceAgent] Waiting for remote audio...
-
-      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:116:15)
 
   console.log
     [VoiceAgent] Starting session for room: no-url-room
@@ -452,7 +360,89 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_15378068-d4be-43e4-80ef-6f7b0171b13e'
+        request_id: '20260228_5088e40f-a174-4451-89fe-73d044022046'
+      }
+    }
+
+    [0m [90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m 123 |[39m       } [36melse[39m {
+    [31m[1m>[22m[39m[90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 125 |[39m       }
+     [90m 126 |[39m       [36mreturn[39m [36mnull[39m[33m;[39m
+     [90m 127 |[39m     } [36mfinally[39m {[0m
+
+      at SarvamService.textToSpeech (src/services/sarvam.service.js:124:17)
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:238:25)
+      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
+
+  console.error
+    [VoiceAgent] TTS returned null. Skipping playback.
+
+    [0m [90m 242 |[39m
+     [90m 243 |[39m       [36mif[39m ([33m![39mwavBuffer) {
+    [31m[1m>[22m[39m[90m 244 |[39m         console[33m.[39merror([32m'[VoiceAgent] TTS returned null. Skipping playback.'[39m)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 245 |[39m         [36mreturn[39m[33m;[39m
+     [90m 246 |[39m       }
+     [90m 247 |[39m[0m
+
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:244:17)
+      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
+
+  console.log
+    [VoiceAgent] Waiting for remote audio...
+
+      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:116:15)
+
+  console.error
+    [Sarvam] TTS failed: {
+      error: {
+        message: 'Validation Error(s):\n' +
+          "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
+        code: 'invalid_request_error',
+        request_id: '20260228_fedaa0f4-8a23-419f-aad6-d4b55bbcf93b'
+      }
+    }
+
+    [0m [90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m 123 |[39m       } [36melse[39m {
+    [31m[1m>[22m[39m[90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 125 |[39m       }
+     [90m 126 |[39m       [36mreturn[39m [36mnull[39m[33m;[39m
+     [90m 127 |[39m     } [36mfinally[39m {[0m
+
+      at SarvamService.textToSpeech (src/services/sarvam.service.js:124:17)
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:238:25)
+      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
+
+  console.error
+    [VoiceAgent] TTS returned null. Skipping playback.
+
+    [0m [90m 242 |[39m
+     [90m 243 |[39m       [36mif[39m ([33m![39mwavBuffer) {
+    [31m[1m>[22m[39m[90m 244 |[39m         console[33m.[39merror([32m'[VoiceAgent] TTS returned null. Skipping playback.'[39m)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 245 |[39m         [36mreturn[39m[33m;[39m
+     [90m 246 |[39m       }
+     [90m 247 |[39m[0m
+
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:244:17)
+      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:113:7)
+
+  console.log
+    [VoiceAgent] Waiting for remote audio...
+
+      at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:116:15)
+
+  console.error
+    [Sarvam] TTS failed: {
+      error: {
+        message: 'Validation Error(s):\n' +
+          "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
+        code: 'invalid_request_error',
+        request_id: '20260228_84e746d1-ebde-4d61-862b-f5fc814f4eda'
       }
     }
 
@@ -568,7 +558,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_5289fdc7-ae34-4ff5-ad4c-32a1d5cdc8d3'
+        request_id: '20260228_c889d84e-595c-4aa5-89f1-fa1db350b238'
       }
     }
 
@@ -609,7 +599,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_dcaf084e-b624-4de4-99ac-278570f3c4aa'
+        request_id: '20260228_1c4796b3-7ef3-4843-ae93-7fd407c0e77f'
       }
     }
 
@@ -650,7 +640,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_cb90db3f-06c5-472c-88fa-6651288bfbab'
+        request_id: '20260228_07dfcb6d-74c4-419d-911c-6e77a33e0611'
       }
     }
 
@@ -691,7 +681,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_1f27965c-0f8c-42b4-85f7-e720aba4fc33'
+        request_id: '20260228_e2585c95-aeb0-4efc-b6ca-4a64441d5ab7'
       }
     }
 
@@ -727,12 +717,12 @@ At line:1 char:1
       at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:116:15)
 
   console.log
-    [VoiceAgent] Starting session for room: room-1772284896705
+    [VoiceAgent] Starting session for room: room-1772285907015
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:64:13)
 
   console.log
-    [VoiceAgent] Connected to room: room-1772284896705
+    [VoiceAgent] Connected to room: room-1772285907015
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:82:15)
 
@@ -742,12 +732,12 @@ At line:1 char:1
       at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:112:15)
 
   console.log
-    [VoiceAgent] Starting session for room: room-1772284896715
+    [VoiceAgent] Starting session for room: room-1772285907026
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:64:13)
 
   console.log
-    [VoiceAgent] Connected to room: room-1772284896715
+    [VoiceAgent] Connected to room: room-1772285907026
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:82:15)
 
@@ -757,12 +747,12 @@ At line:1 char:1
       at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:112:15)
 
   console.log
-    [VoiceAgent] Starting session for room: room-1772284896725
+    [VoiceAgent] Starting session for room: room-1772285907035
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:64:13)
 
   console.log
-    [VoiceAgent] Connected to room: room-1772284896725
+    [VoiceAgent] Connected to room: room-1772285907035
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:82:15)
 
@@ -772,12 +762,12 @@ At line:1 char:1
       at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:112:15)
 
   console.log
-    [VoiceAgent] Starting session for room: room-1772284896737
+    [VoiceAgent] Starting session for room: room-1772285907045
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:64:13)
 
   console.log
-    [VoiceAgent] Connected to room: room-1772284896737
+    [VoiceAgent] Connected to room: room-1772285907045
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:82:15)
 
@@ -787,12 +777,12 @@ At line:1 char:1
       at VoiceAgentService._runPipeline (src/services/voiceAgent.service.js:112:15)
 
   console.log
-    [VoiceAgent] Starting session for room: room-1772284896748
+    [VoiceAgent] Starting session for room: room-1772285907056
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:64:13)
 
   console.log
-    [VoiceAgent] Connected to room: room-1772284896748
+    [VoiceAgent] Connected to room: room-1772285907056
 
       at VoiceAgentService.startVoiceSession (src/services/voiceAgent.service.js:82:15)
 
@@ -807,7 +797,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_126f39f9-1c39-4695-8f82-918435735601'
+        request_id: '20260228_a79a54af-b5a2-4c31-8320-57bb77b8943c'
       }
     }
 
@@ -848,7 +838,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_51c174f4-07c1-4610-aac1-0682d5a36e12'
+        request_id: '20260228_80d6ecd0-41d4-4216-a988-34b851a252e4'
       }
     }
 
@@ -889,7 +879,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_de08cb29-01b4-487e-af06-3e7daa16bff9'
+        request_id: '20260228_7553c49c-7e38-423e-bdb7-6c47416485cb'
       }
     }
 
@@ -930,7 +920,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_7017b1d2-7e08-44d2-8935-c0f4daa2a0cf'
+        request_id: '20260228_6fb6d4e3-9927-463b-8c15-9d3ebd885108'
       }
     }
 
@@ -971,7 +961,7 @@ At line:1 char:1
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_d4834ca1-fc98-4801-a458-4cb27d4f25e2'
+        request_id: '20260228_713c04ad-21ab-4f33-bb99-79eacec0e42b'
       }
     }
 
@@ -1011,33 +1001,51 @@ At line:1 char:1
 
       at VoiceAgentService.endSession (src/services/voiceAgent.service.js:345:15)
 
-PASS tests/3.1.test.js
+FAIL tests/3.1.test.js
   Phase 3.1 ΓÇö LiveKit Infrastructure
     POST /api/voice/sessions/initiate ΓÇö Token Generation
-      ΓêÜ should return 200 with roomName, token, and livekitUrl (400 ms)
-      ΓêÜ should auto-generate roomName when not provided (44 ms)
-      ΓêÜ should auto-generate simulatorIdentity when not provided (67 ms)
-      ΓêÜ should use custom simulatorIdentity when provided (36 ms)
+      ├ù should return 200 with roomName, token, and livekitUrl (306 ms)
+      ΓêÜ should auto-generate roomName when not provided (55 ms)
+      ΓêÜ should auto-generate simulatorIdentity when not provided (53 ms)
+      ΓêÜ should use custom simulatorIdentity when provided (46 ms)
     POST /api/voice/sessions/initiate ΓÇö Non-blocking Agent
-      ΓêÜ should return response without waiting for agent to connect (88 ms)
+      ΓêÜ should return response without waiting for agent to connect (150 ms)
       ΓêÜ should still return 200 even if agent startup throws (108 ms)
     POST /api/voice/sessions/initiate ΓÇö Input Handling
-      ΓêÜ should handle empty body gracefully (24 ms)
-      ΓêÜ should handle missing Content-Type gracefully (27 ms)
+      ΓêÜ should handle empty body gracefully (28 ms)
+      ΓêÜ should handle missing Content-Type gracefully (29 ms)
     POST /api/voice/sessions/initiate ΓÇö Missing LIVEKIT_URL
-      ΓêÜ should return 200 with livekitUrl undefined when LIVEKIT_URL is unset (72 ms)
+      ΓêÜ should return 200 with livekitUrl undefined when LIVEKIT_URL is unset (53 ms)
     POST /api/voice/sessions/initiate ΓÇö Concurrent Requests
-      ΓêÜ should handle 5 concurrent requests without errors (149 ms)
-      ΓêÜ should generate unique room names for concurrent requests without roomName (189 ms)
+      ΓêÜ should handle 5 concurrent requests without errors (222 ms)
+      ΓêÜ should generate unique room names for concurrent requests without roomName (158 ms)
     GET /api/voice/status ΓÇö Health Check
-      ΓêÜ should return phase 3.1 status with livekit health (82 ms)
+      ΓêÜ should return phase 3.1 status with livekit health (107 ms)
     DELETE /api/voice/sessions/:roomName ΓÇö Session Teardown
-      ΓêÜ should return success even if no active session exists (23 ms)
+      ΓêÜ should return success even if no active session exists (30 ms)
 
-Test Suites: 1 passed, 1 total
-Tests:       13 passed, 13 total
+  ΓùÅ Phase 3.1 ΓÇö LiveKit Infrastructure ΓÇ║ POST /api/voice/sessions/initiate ΓÇö Token Generation ΓÇ║ should 
+return 200 with roomName, token, and livekitUrl
+
+    listen EADDRINUSE: address already in use :::5000
+
+    [0m [90m 63 |[39m
+     [90m 64 |[39m [90m// Only start listening when run directly (not when imported by tests)[39m
+    [31m[1m>[22m[39m[90m 65 |[39m [36mconst[39m server [33m=[39m 
+app[33m.[39mlisten([33mPORT[39m[33m,[39m () [33m=>[39m {
+     [90m    |[39m                    [31m[1m^[22m[39m
+     [90m 66 |[39m   console[33m.[39mlog([32m`≡ƒÜÇ Server running on port ${PORT}`[39m)[33m;[39m
+     [90m 67 |[39m   console[33m.[39mlog([32m`≡ƒôì Environment: ${process.env.NODE_ENV || 
+"development"}`[39m)[33m;[39m
+     [90m 68 |[39m })[33m;[39m[0m
+
+      at Function.listen (node_modules/express/lib/application.js:635:24)
+      at server.js:65:20
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 12 passed, 13 total
 Snapshots:   0 total
-Time:        2.899 s, estimated 3 s
+Time:        2.998 s, estimated 3 s
 Ran all test suites matching tests/3.1.test.js.
   console.error
     [Sarvam] TTS failed: {
@@ -1045,7 +1053,7 @@ Ran all test suites matching tests/3.1.test.js.
         message: 'Validation Error(s):\n' +
           "- speaker: Input should be 'anushka', 'abhilash', 'manisha', 'vidya', 'arya', 'karun', 'hitesh', 'aditya', 'ritu', 'priya', 'neha', 'rahul', 'pooja', 'rohan', 'simran', 'kavya', 'amit', 'dev', 'ishita', 'shreya', 'ratan', 'varun', 'manan', 'sumit', 'roopa', 'kabir', 'aayan', 'shubh', 'ashutosh', 'advait', 'amelia', 'sophia', 'anand', 'tanya', 'tarun', 'sunny', 'mani', 'gokul', 'vijay', 'shruti', 'suhani', 'mohit', 'kavitha', 'rehan', 'soham' or 'rupali'",
         code: 'invalid_request_error',
-        request_id: '20260228_b7cdc2b1-9b37-4ee8-9fdb-aabe9767e2c8'
+        request_id: '20260228_ac64652e-7252-4b20-8eb9-922e44fb84ca'
       }
     }
 

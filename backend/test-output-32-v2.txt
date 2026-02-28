@@ -1,0 +1,358 @@
+﻿  console.log
+    [VoiceAgent] @livekit/rtc-node loaded successfully
+
+      at src/services/voiceAgent.service.js:39:11
+
+  console.error
+    [Sarvam] STT failed: Network error
+
+    [0m [90m 66 |[39m         console[33m.[39merror([32m'[Sarvam] STT timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m 67 |[39m       } [36melse[39m {
+    [31m[1m>[22m[39m[90m 68 |[39m         console[33m.[39merror([32m'[Sarvam] STT failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 69 |[39m       }
+     [90m 70 |[39m       [36mreturn[39m { transcript[33m:[39m [32m''[39m[33m,[39m languageCode[33m:[39m [36mnull[39m }[33m;[39m
+     [90m 71 |[39m     } [36mfinally[39m {[0m
+
+      at SarvamService.speechToText (src/services/sarvam.service.js:68:17)
+      at Object.<anonymous> (tests/3.2.test.js:232:22)
+
+  console.error
+    [Sarvam] STT timed out after 10000 ms
+
+    [0m [90m 64 |[39m     } [36mcatch[39m (err) {
+     [90m 65 |[39m       [36mif[39m (err[33m.[39mname [33m===[39m [32m'AbortError'[39m [33m||[39m err[33m.[39mcode [33m===[39m [32m'ECONNABORTED'[39m) {
+    [31m[1m>[22m[39m[90m 66 |[39m         console[33m.[39merror([32m'[Sarvam] STT timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 67 |[39m       } [36melse[39m {
+     [90m 68 |[39m         console[33m.[39merror([32m'[Sarvam] STT failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m 69 |[39m       }[0m
+
+      at SarvamService.speechToText (src/services/sarvam.service.js:66:17)
+      at Object.<anonymous> (tests/3.2.test.js:243:22)
+
+  console.error
+    [Sarvam] TTS failed: Server error
+
+    [0m [90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m 123 |[39m       } [36melse[39m {
+    [31m[1m>[22m[39m[90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 125 |[39m       }
+     [90m 126 |[39m       [36mreturn[39m [36mnull[39m[33m;[39m
+     [90m 127 |[39m     } [36mfinally[39m {[0m
+
+      at SarvamService.textToSpeech (src/services/sarvam.service.js:124:17)
+      at Object.<anonymous> (tests/3.2.test.js:269:22)
+
+  console.error
+    [Sarvam] TTS timed out after 10000 ms
+
+    [0m [90m 120 |[39m     } [36mcatch[39m (err) {
+     [90m 121 |[39m       [36mif[39m (err[33m.[39mname [33m===[39m [32m'AbortError'[39m [33m||[39m err[33m.[39mcode [33m===[39m [32m'ECONNABORTED'[39m) {
+    [31m[1m>[22m[39m[90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 123 |[39m       } [36melse[39m {
+     [90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m 125 |[39m       }[0m
+
+      at SarvamService.textToSpeech (src/services/sarvam.service.js:122:17)
+      at Object.<anonymous> (tests/3.2.test.js:279:22)
+
+  console.error
+    [Sarvam] TTS returned empty audios array
+
+    [0m [90m 112 |[39m
+     [90m 113 |[39m       [36mif[39m ([33m![39mres[33m.[39mdata[33m.[39maudios [33m||[39m [33m![39mres[33m.[39mdata[33m.[39maudios[[35m0[39m]) {
+    [31m[1m>[22m[39m[90m 114 |[39m         console[33m.[39merror([32m'[Sarvam] TTS returned empty audios array'[39m)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 115 |[39m         [36mreturn[39m [36mnull[39m[33m;[39m
+     [90m 116 |[39m       }
+     [90m 117 |[39m[0m
+
+      at SarvamService.textToSpeech (src/services/sarvam.service.js:114:17)
+      at Object.<anonymous> (tests/3.2.test.js:287:22)
+
+  console.error
+    [VoiceAgent] Speak failed: Cannot read properties of undefined (reading 'SOURCE_MICROPHONE')
+
+    [0m [90m 301 |[39m
+     [90m 302 |[39m     } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 303 |[39m       console[33m.[39merror([32m'[VoiceAgent] Speak failed:'[39m[33m,[39m err[33m.[39mmessage)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 304 |[39m     }
+     [90m 305 |[39m   }
+     [90m 306 |[39m[0m
+
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:303:15)
+      at Object.<anonymous> (tests/3.2.test.js:431:7)
+
+  console.error
+    [Sarvam] TTS failed: TTS down
+
+    [0m [90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m 123 |[39m       } [36melse[39m {
+    [31m[1m>[22m[39m[90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 125 |[39m       }
+     [90m 126 |[39m       [36mreturn[39m [36mnull[39m[33m;[39m
+     [90m 127 |[39m     } [36mfinally[39m {[0m
+
+      at SarvamService.textToSpeech (src/services/sarvam.service.js:124:17)
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:240:25)
+      at Object.<anonymous> (tests/3.2.test.js:456:7)
+
+  console.error
+    [VoiceAgent] TTS returned null. Skipping playback.
+
+    [0m [90m 244 |[39m
+     [90m 245 |[39m       [36mif[39m ([33m![39mwavBuffer) {
+    [31m[1m>[22m[39m[90m 246 |[39m         console[33m.[39merror([32m'[VoiceAgent] TTS returned null. Skipping playback.'[39m)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 247 |[39m         [36mreturn[39m[33m;[39m
+     [90m 248 |[39m       }
+     [90m 249 |[39m[0m
+
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:246:17)
+      at Object.<anonymous> (tests/3.2.test.js:456:7)
+
+  console.error
+    [VoiceAgent] Speak failed: Cannot read properties of undefined (reading 'SOURCE_MICROPHONE')
+
+    [0m [90m 301 |[39m
+     [90m 302 |[39m     } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 303 |[39m       console[33m.[39merror([32m'[VoiceAgent] Speak failed:'[39m[33m,[39m err[33m.[39mmessage)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 304 |[39m     }
+     [90m 305 |[39m   }
+     [90m 306 |[39m[0m
+
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:303:15)
+      at Object.<anonymous> (tests/3.2.test.js:478:7)
+
+  console.log
+    [VoiceAgent] Audio: 48000Hz, 1ch
+
+      at VoiceAgentService._listen (src/services/voiceAgent.service.js:193:19)
+
+  console.log
+    [VoiceAgent] Resampling 48000Hz ΓåÆ 16000Hz
+
+      at VoiceAgentService._listen (src/services/voiceAgent.service.js:224:15)
+
+  console.log
+    [VoiceAgent] Audio: 48000Hz, 1ch
+
+      at VoiceAgentService._listen (src/services/voiceAgent.service.js:193:19)
+
+  console.log
+    [VoiceAgent] Resampling 48000Hz ΓåÆ 16000Hz
+
+      at VoiceAgentService._listen (src/services/voiceAgent.service.js:224:15)
+
+  console.log
+    [VoiceAgent] Audio: 48000Hz, 1ch
+
+      at VoiceAgentService._listen (src/services/voiceAgent.service.js:193:19)
+
+  console.log
+    [VoiceAgent] Resampling 48000Hz ΓåÆ 16000Hz
+
+      at VoiceAgentService._listen (src/services/voiceAgent.service.js:224:15)
+
+  console.error
+    [Sarvam] STT failed: STT exploded
+
+    [0m [90m 66 |[39m         console[33m.[39merror([32m'[Sarvam] STT timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m 67 |[39m       } [36melse[39m {
+    [31m[1m>[22m[39m[90m 68 |[39m         console[33m.[39merror([32m'[Sarvam] STT failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 69 |[39m       }
+     [90m 70 |[39m       [36mreturn[39m { transcript[33m:[39m [32m''[39m[33m,[39m languageCode[33m:[39m [36mnull[39m }[33m;[39m
+     [90m 71 |[39m     } [36mfinally[39m {[0m
+
+      at SarvamService.speechToText (src/services/sarvam.service.js:68:17)
+      at Object.<anonymous> (tests/3.2.test.js:549:22)
+
+  console.error
+    [Sarvam] TTS failed: TTS exploded
+
+    [0m [90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m 123 |[39m       } [36melse[39m {
+    [31m[1m>[22m[39m[90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 125 |[39m       }
+     [90m 126 |[39m       [36mreturn[39m [36mnull[39m[33m;[39m
+     [90m 127 |[39m     } [36mfinally[39m {[0m
+
+      at SarvamService.textToSpeech (src/services/sarvam.service.js:124:17)
+      at Object.<anonymous> (tests/3.2.test.js:558:22)
+
+  console.error
+    [Sarvam] STT timed out after 10000 ms
+
+    [0m [90m 64 |[39m     } [36mcatch[39m (err) {
+     [90m 65 |[39m       [36mif[39m (err[33m.[39mname [33m===[39m [32m'AbortError'[39m [33m||[39m err[33m.[39mcode [33m===[39m [32m'ECONNABORTED'[39m) {
+    [31m[1m>[22m[39m[90m 66 |[39m         console[33m.[39merror([32m'[Sarvam] STT timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 67 |[39m       } [36melse[39m {
+     [90m 68 |[39m         console[33m.[39merror([32m'[Sarvam] STT failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m 69 |[39m       }[0m
+
+      at SarvamService.speechToText (src/services/sarvam.service.js:66:17)
+      at Object.<anonymous> (tests/3.2.test.js:568:22)
+
+  console.error
+    [Sarvam] TTS timed out after 10000 ms
+
+    [0m [90m 120 |[39m     } [36mcatch[39m (err) {
+     [90m 121 |[39m       [36mif[39m (err[33m.[39mname [33m===[39m [32m'AbortError'[39m [33m||[39m err[33m.[39mcode [33m===[39m [32m'ECONNABORTED'[39m) {
+    [31m[1m>[22m[39m[90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 123 |[39m       } [36melse[39m {
+     [90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m 125 |[39m       }[0m
+
+      at SarvamService.textToSpeech (src/services/sarvam.service.js:122:17)
+      at Object.<anonymous> (tests/3.2.test.js:578:22)
+
+  console.error
+    [Sarvam] TTS failed: TTS down
+
+    [0m [90m 122 |[39m         console[33m.[39merror([32m'[Sarvam] TTS timed out after'[39m[33m,[39m [33mAPI_TIMEOUT_MS[39m[33m,[39m [32m'ms'[39m)[33m;[39m
+     [90m 123 |[39m       } [36melse[39m {
+    [31m[1m>[22m[39m[90m 124 |[39m         console[33m.[39merror([32m'[Sarvam] TTS failed:'[39m[33m,[39m err[33m.[39mresponse[33m?[39m[33m.[39mdata [33m||[39m err[33m.[39mmessage)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 125 |[39m       }
+     [90m 126 |[39m       [36mreturn[39m [36mnull[39m[33m;[39m
+     [90m 127 |[39m     } [36mfinally[39m {[0m
+
+      at SarvamService.textToSpeech (src/services/sarvam.service.js:124:17)
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:240:25)
+      at Object.<anonymous> (tests/3.2.test.js:593:7)
+
+  console.error
+    [VoiceAgent] TTS returned null. Skipping playback.
+
+    [0m [90m 244 |[39m
+     [90m 245 |[39m       [36mif[39m ([33m![39mwavBuffer) {
+    [31m[1m>[22m[39m[90m 246 |[39m         console[33m.[39merror([32m'[VoiceAgent] TTS returned null. Skipping playback.'[39m)[33m;[39m
+     [90m     |[39m                 [31m[1m^[22m[39m
+     [90m 247 |[39m         [36mreturn[39m[33m;[39m
+     [90m 248 |[39m       }
+     [90m 249 |[39m[0m
+
+      at VoiceAgentService._speak (src/services/voiceAgent.service.js:246:17)
+      at Object.<anonymous> (tests/3.2.test.js:593:7)
+
+  console.error
+    [VoiceAgent] Audio capture error: Stream died
+
+    [0m [90m 200 |[39m       }
+     [90m 201 |[39m     } [36mcatch[39m (err) {
+    [31m[1m>[22m[39m[90m 202 |[39m       console[33m.[39merror([32m'[VoiceAgent] Audio capture error:'[39m[33m,[39m err[33m.[39mmessage)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 203 |[39m     }
+     [90m 204 |[39m
+     [90m 205 |[39m     [90m// Stream cleanup happens when the for-await exits[39m[0m
+
+      at VoiceAgentService._listen (src/services/voiceAgent.service.js:202:15)
+      at Object.<anonymous> (tests/3.2.test.js:613:7)
+
+node : (node:28304) ExperimentalWarning: VM Modules is an experimental feature and might change at 
+any time
+At line:1 char:48
++ ... m-modules"; node node_modules/jest/bin/jest.js tests/3.2.test.js --fo ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:28304) Ex...nge at any time:String) [], RemoteExce 
+   ption
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL tests/3.2.test.js
+  Phase 3.2 ΓÇö Speech Pipeline
+    SarvamService.speechToText()
+      ΓêÜ should return transcript from valid WAV buffer (7 ms)
+      ΓêÜ should return empty transcript on API error (10 ms)
+      ΓêÜ should return empty transcript on timeout (AbortError) (8 ms)
+    SarvamService.textToSpeech()
+      ΓêÜ should return Buffer from valid text (2 ms)
+      ΓêÜ should return null on API error (3 ms)
+      ΓêÜ should return null on timeout (4 ms)
+      ΓêÜ should return null on empty audios array (4 ms)
+    SarvamService.resample()
+      ΓêÜ should decimate 48kHz ΓåÆ 16kHz (ratio 3) (2 ms)
+      ΓêÜ should upsample 16kHz ΓåÆ 48kHz (repeat 3x) (2 ms)
+      ΓêÜ should return same array if rates are equal (1 ms)
+    SarvamService.downmixToMono()
+      ΓêÜ should average stereo channels correctly (3 ms)
+      ΓêÜ should return same array for mono input (1 ms)
+      ΓêÜ should handle 4-channel input (1 ms)
+    SarvamService WAV utilities
+      ΓêÜ createWavBuffer should produce valid 44-byte header (2 ms)
+      ΓêÜ parseWav should extract correct metadata (2 ms)
+      ΓêÜ roundtrip: create ΓåÆ parse should preserve PCM data (4 ms)
+    VoiceAgentService._speak()
+      ├ù should publish, feed frames, and unpublish track (4 ms)
+      ΓêÜ should not crash if TTS returns null (6 ms)
+      ├ù should not stack tracks (only one publish per speak call) (5 ms)
+    VoiceAgentService._listen()
+      ΓêÜ should accumulate frames and return WAV buffer (3 ms)
+      ΓêÜ should stop after duration expires (2 ms)
+      ΓêÜ should call stream.close() for cleanup (1 ms)
+      ΓêÜ should return null when no frames captured (1 ms)
+    Failure handling
+      ΓêÜ STT failure should not crash server (6 ms)
+      ΓêÜ TTS failure should not crash server (2 ms)
+      ΓêÜ timeout should trigger abort and return gracefully for STT (2 ms)
+      ΓêÜ timeout should trigger abort and return null for TTS (3 ms)
+      ΓêÜ speak() should survive TTS failure without crashing (4 ms)
+      ΓêÜ listen() should survive AudioStream error without crashing (3 ms)
+
+  ΓùÅ Phase 3.2 ΓÇö Speech Pipeline ΓÇ║ VoiceAgentService._speak() ΓÇ║ should publish, feed frames, 
+and unpublish track
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 1
+    Received number of calls: 0
+
+    [0m [90m 431 |[39m       [36mawait[39m 
+voiceAgentService[33m.[39m_speak(mockRoom[33m,[39m [32m'Test text'[39m)[33m;[39m
+     [90m 432 |[39m
+    [31m[1m>[22m[39m[90m 433 |[39m       
+expect(mockPublishTrack)[33m.[39mtoHaveBeenCalledTimes([35m1[39m)[33m;[39m
+     [90m     |[39m                                [31m[1m^[22m[39m
+     [90m 434 |[39m       expect(mockCaptureFrame)[33m.[39mtoHaveBeenCalled()[33m;[39m
+     [90m 435 |[39m       
+expect(mockUnpublishTrack)[33m.[39mtoHaveBeenCalledTimes([35m1[39m)[33m;[39m
+     [90m 436 |[39m[0m
+
+      at Object.<anonymous> (tests/3.2.test.js:433:32)
+
+  ΓùÅ Phase 3.2 ΓÇö Speech Pipeline ΓÇ║ VoiceAgentService._speak() ΓÇ║ should not stack tracks (only 
+one publish per speak call)
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 1
+    Received number of calls: 0
+
+    [0m [90m 478 |[39m       [36mawait[39m 
+voiceAgentService[33m.[39m_speak(mockRoom[33m,[39m [32m'One call'[39m)[33m;[39m
+     [90m 479 |[39m
+    [31m[1m>[22m[39m[90m 480 |[39m       
+expect(mockPublishTrack)[33m.[39mtoHaveBeenCalledTimes([35m1[39m)[33m;[39m
+     [90m     |[39m                                [31m[1m^[22m[39m
+     [90m 481 |[39m       
+expect(mockUnpublishTrack)[33m.[39mtoHaveBeenCalledTimes([35m1[39m)[33m;[39m
+     [90m 482 |[39m     })[33m;[39m
+     [90m 483 |[39m   })[33m;[39m[0m
+
+      at Object.<anonymous> (tests/3.2.test.js:480:32)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 27 passed, 29 total
+Snapshots:   0 total
+Time:        0.421 s, estimated 1 s
+Ran all test suites matching tests/3.2.test.js.

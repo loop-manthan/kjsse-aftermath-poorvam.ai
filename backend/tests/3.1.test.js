@@ -21,6 +21,7 @@ process.env.JWT_SECRET = 'test-secret';
 process.env.LIVEKIT_API_KEY = 'test-api-key';
 process.env.LIVEKIT_API_SECRET = 'test-api-secret';
 process.env.LIVEKIT_URL = 'wss://test.livekit.cloud';
+process.env.PORT = '0';
 
 // ─────────────────────────────────────────────
 //  MOCKS — must be set up before any import
@@ -70,6 +71,21 @@ jest.unstable_mockModule('jsonwebtoken', () => ({
   },
 }));
 
+// Mock axios (prevents real Sarvam API calls from background pipeline)
+jest.unstable_mockModule('axios', () => ({
+  default: {
+    post: jest.fn().mockResolvedValue({ data: { audios: [], transcript: '' } }),
+  },
+}));
+
+// Mock form-data (used by sarvam.service.js)
+jest.unstable_mockModule('form-data', () => ({
+  default: jest.fn().mockImplementation(() => ({
+    append: jest.fn(),
+    getHeaders: jest.fn().mockReturnValue({}),
+  })),
+}));
+
 // Mock livekit-server-sdk (prevents real token generation and API calls)
 jest.unstable_mockModule('livekit-server-sdk', () => {
   const mockAddGrant = jest.fn();
@@ -89,15 +105,21 @@ jest.unstable_mockModule('livekit-server-sdk', () => {
 // Mock @livekit/rtc-node (prevents native binary load)
 jest.unstable_mockModule('@livekit/rtc-node', () => {
   const mockOn = jest.fn().mockReturnThis();
+  const mockOff = jest.fn().mockReturnThis();
   const mockConnect = jest.fn().mockResolvedValue(undefined);
   const mockDisconnect = jest.fn().mockResolvedValue(undefined);
 
   return {
     Room: jest.fn().mockImplementation(() => ({
       on: mockOn,
+      off: mockOff,
       connect: mockConnect,
       disconnect: mockDisconnect,
       remoteParticipants: new Map(),
+      localParticipant: {
+        publishTrack: jest.fn().mockResolvedValue(undefined),
+        unpublishTrack: jest.fn().mockResolvedValue(undefined),
+      },
     })),
     RoomEvent: {
       ParticipantConnected: 'participantConnected',
@@ -108,6 +130,20 @@ jest.unstable_mockModule('@livekit/rtc-node', () => {
       Reconnected: 'reconnected',
       Disconnected: 'disconnected',
     },
+    AudioStream: jest.fn().mockImplementation(() => ({
+      [Symbol.asyncIterator]() {
+        return { next() { return Promise.resolve({ done: true }); } };
+      },
+      close: jest.fn(),
+    })),
+    LocalAudioTrack: {
+      createAudioTrack: jest.fn().mockReturnValue({ kind: 'audio' }),
+    },
+    AudioSource: jest.fn().mockImplementation(() => ({
+      captureFrame: jest.fn().mockResolvedValue(undefined),
+    })),
+    AudioFrame: jest.fn().mockImplementation((d, sr, ch, spc) => ({ data: d })),
+    TrackPublishOptions: jest.fn(),
   };
 });
 
@@ -151,7 +187,7 @@ describe('Phase 3.1 — LiveKit Infrastructure', () => {
       expect(res.body).toHaveProperty('roomName', 'test-room-1');
       expect(res.body).toHaveProperty('token', 'mock-jwt-token');
       expect(res.body).toHaveProperty('livekitUrl', 'wss://test.livekit.cloud');
-      expect(res.body).toHaveProperty('agentIdentity', 'node-agent');
+      expect(res.body.agentIdentity).toBe('node-agent');
       expect(res.body).toHaveProperty('simulatorIdentity');
     });
 
