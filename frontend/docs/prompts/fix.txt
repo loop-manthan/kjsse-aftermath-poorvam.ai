@@ -1,0 +1,15 @@
+
+
+After completing the registration inside participant its show qr 
+
+Add qr code route which starts the 5 min timer and qr code expires in 5 mins which would only visible if the participant is shorlisted or else show wait for the shorlisting 
+
+Also ai shortlisting is not working I have attached what backend routes are return for ai shortlisting and all the participant's ppts and resumes are to be reviewed by ai for that routes is being created in backend grade it in the range of ten then admin enter the no of participants to be shortlisted for the next round then that list of participants should be sent to judges for scoring then judge which grade them all shortlisted participants then he can send results to admin then from admin to participants 
+
+Also once the user is registered again that form is visible in the dashboard which should not be visible
+
+Also upload only team leaders resume not everyone and If something is missing in the form don't apply validation for it
+
+Inside participant dashboard there should be another tab for uploading ppt and github not inside registration route and also another tab for your qr code for food coupouns and entry passes
+
+Also I would like to replace entering code mannually logic to qr code logic how can I do that 
