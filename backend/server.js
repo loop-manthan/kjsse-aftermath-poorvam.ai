@@ -1,4 +1,4 @@
-import 'dotenv/config'; // MUST be first — loads .env before any other module initializes
+import "dotenv/config"; // MUST be first — loads .env before any other module initializes
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -10,6 +10,8 @@ import reviewRoutes from "./src/routes/review.routes.js";
 import paymentRoutes from "./src/routes/payment.routes.js";
 import categoryRoutes from "./src/routes/category.routes.js";
 import voiceRoutes from "./src/routes/voice.routes.js";
+import notificationRoutes from "./src/routes/notification.routes.js";
+import healthRoutes from "./src/routes/health.routes.js";
 
 import {
   errorHandler,
@@ -57,6 +59,8 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/voice", voiceRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/health", healthRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
@@ -66,5 +70,10 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
 });
+
+// Initialize Socket.IO
+import { initializeSocket } from "./src/socket/socket.js";
+const io = initializeSocket(server);
+console.log(`🔌 Socket.IO initialized`);
 
 export { app, server };

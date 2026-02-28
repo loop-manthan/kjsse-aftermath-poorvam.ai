@@ -1,27 +1,37 @@
 export interface Job {
   _id: string;
   jobId: string;
-  clientId: string | {
-    _id: string;
-    name: string;
-    phone: string;
-    address: string;
-  };
-  workerId?: string | {
-    _id: string;
-    name: string;
-    phone: string;
-    rating: number;
-  };
+  clientId:
+    | string
+    | {
+        _id: string;
+        name: string;
+        phone: string;
+        address: string;
+      };
+  workerId?:
+    | string
+    | {
+        _id: string;
+        name: string;
+        phone: string;
+        rating: number;
+      };
   description: string;
   category: string;
   paymentOffer: number;
   location: {
-    type: 'Point';
+    type: "Point";
     coordinates: [number, number];
   };
   address: string;
-  status: 'pending' | 'assigned' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
+  status:
+    | "pending"
+    | "assigned"
+    | "accepted"
+    | "in_progress"
+    | "completed"
+    | "cancelled";
   distance?: number;
   createdAt: string;
   assignedAt?: string;
@@ -29,8 +39,8 @@ export interface Job {
   startedAt?: string;
   completedAt?: string;
   cancelledAt?: string;
-  paymentStatus: 'pending' | 'completed' | 'refunded';
-  paymentMode?: 'online' | 'offline';
+  paymentStatus: "pending" | "completed" | "refunded";
+  paymentMode?: "online" | "offline";
   tip?: number;
   workerRating?: number;
   clientRating?: number;
@@ -41,7 +51,7 @@ export interface CreateJobData {
   description: string;
   paymentOffer: number;
   location: {
-    type: 'Point';
+    type: "Point";
     coordinates: [number, number];
   };
   address: string;

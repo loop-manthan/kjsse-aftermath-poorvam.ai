@@ -12,8 +12,11 @@
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
+    "@googlemaps/js-api-loader": "^2.0.2",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-context-menu": "^2.2.16",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@tailwindcss/vite": "^4.2.0",
     "@types/lodash.throttle": "^4.1.9",
     "@types/node": "^25.3.2",
@@ -23,7 +26,7 @@
     "clsx": "^2.1.1",
     "daisyui": "^5.5.18",
     "date-fns": "^4.1.0",
-    "framer-motion": "^12.34.2",
+    "framer-motion": "^12.34.3",
     "html5-qrcode": "^2.3.8",
     "jotai": "^2.18.0",
     "lodash.throttle": "^4.1.1",
@@ -33,8 +36,12 @@
     "react-hook-form": "^7.71.2",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.13.0",
+    "react-speech-recognition": "^4.0.1",
+    "regenerator-runtime": "^0.14.1",
+    "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.0",
+    "three": "^0.183.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {

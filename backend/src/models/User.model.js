@@ -79,6 +79,40 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    experience: {
+      years: {
+        type: Number,
+        min: 0,
+        max: 50,
+        default: 0,
+      },
+      description: String,
+      specializations: [String],
+    },
+    aadhaar: {
+      number: String,
+      documentUrl: String,
+      isVerified: {
+        type: Boolean,
+        default: false,
+      },
+      verifiedAt: Date,
+    },
+    earnings: {
+      total: {
+        type: Number,
+        default: 0,
+      },
+      thisMonth: {
+        type: Number,
+        default: 0,
+      },
+      pendingAmount: {
+        type: Number,
+        default: 0,
+      },
+      lastPayout: Date,
+    },
   },
   {
     timestamps: true,

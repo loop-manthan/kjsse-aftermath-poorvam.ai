@@ -1,23 +1,50 @@
-import { useAuth } from '../context/AuthContext';
-import { LogOut, Briefcase, DollarSign, Star, TrendingUp } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import AvailableJobs from '../components/worker/AvailableJobs';
-import MyJobs from '../components/worker/MyJobs';
-import { useJobs } from '../context/JobContext';
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { LogOut, Briefcase, DollarSign, Star, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import AvailableJobs from "../components/worker/AvailableJobs";
+import MyJobs from "../components/worker/MyJobs";
+import { useJobs } from "../context/JobContext";
+import { authService } from "../api/services";
+import toast from "react-hot-toast";
 
 const WorkerDashboard = () => {
   const { user, logout } = useAuth();
   const { jobs } = useJobs();
   const navigate = useNavigate();
+  const [isAvailable, setIsAvailable] = useState(user?.status === "available");
+  const [updating, setUpdating] = useState(false);
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
-  const myJobs = jobs.filter((j) => ['accepted', 'in_progress'].includes(j.status));
-  const completedJobs = jobs.filter((j) => j.status === 'completed');
-  const totalEarnings = completedJobs.reduce((sum, job) => sum + job.paymentOffer, 0);
+  const handleAvailabilityToggle = async () => {
+    setUpdating(true);
+    try {
+      const newStatus = !isAvailable;
+      await authService.updateAvailability(newStatus);
+      setIsAvailable(newStatus);
+      toast.success(
+        newStatus ? "You are now available for jobs" : "You are now offline",
+      );
+    } catch (error) {
+      console.error("Error updating availability:", error);
+      toast.error("Failed to update availability");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const myJobs = jobs.filter((j) =>
+    ["accepted", "in_progress"].includes(j.status),
+  );
+  const completedJobs = jobs.filter((j) => j.status === "completed");
+  const totalEarnings = completedJobs.reduce(
+    (sum, job) => sum + job.paymentOffer,
+    0,
+  );
 
   const stats = {
     activeJobs: myJobs.length,
@@ -37,6 +64,26 @@ const WorkerDashboard = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Availability Toggle */}
+            <div className="flex items-center gap-3 glass-card rounded-full px-4 py-2">
+              <span className="text-sm text-white/70">
+                {isAvailable ? "Available" : "Offline"}
+              </span>
+              <button
+                onClick={handleAvailabilityToggle}
+                disabled={updating}
+                className={`relative w-12 h-6 rounded-full transition-all ${
+                  isAvailable ? "bg-green-500" : "bg-white/20"
+                } ${updating ? "opacity-50" : ""}`}
+              >
+                <div
+                  className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                    isAvailable ? "translate-x-6" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
             <div className="text-right">
               <p className="text-sm font-medium text-white">{user?.name}</p>
               <p className="text-xs text-white/60">Worker Account</p>
@@ -68,7 +115,9 @@ const WorkerDashboard = () => {
               <div className="w-12 h-12 rounded-full glass-nested flex items-center justify-center">
                 <Briefcase size={24} className="text-blue-400" />
               </div>
-              <span className="text-3xl font-bold text-white">{stats.activeJobs}</span>
+              <span className="text-3xl font-bold text-white">
+                {stats.activeJobs}
+              </span>
             </div>
             <p className="text-white/70 text-sm">Active Jobs</p>
           </div>
@@ -78,7 +127,9 @@ const WorkerDashboard = () => {
               <div className="w-12 h-12 rounded-full glass-nested flex items-center justify-center">
                 <TrendingUp size={24} className="text-green-400" />
               </div>
-              <span className="text-3xl font-bold text-white">{stats.completedJobs}</span>
+              <span className="text-3xl font-bold text-white">
+                {stats.completedJobs}
+              </span>
             </div>
             <p className="text-white/70 text-sm">Completed</p>
           </div>
@@ -88,7 +139,9 @@ const WorkerDashboard = () => {
               <div className="w-12 h-12 rounded-full glass-nested flex items-center justify-center">
                 <DollarSign size={24} className="text-yellow-400" />
               </div>
-              <span className="text-3xl font-bold text-white">₹{stats.totalEarnings}</span>
+              <span className="text-3xl font-bold text-white">
+                ₹{stats.totalEarnings}
+              </span>
             </div>
             <p className="text-white/70 text-sm">Total Earnings</p>
           </div>
@@ -98,7 +151,9 @@ const WorkerDashboard = () => {
               <div className="w-12 h-12 rounded-full glass-nested flex items-center justify-center">
                 <Star size={24} className="text-purple-400" />
               </div>
-              <span className="text-3xl font-bold text-white">{stats.rating.toFixed(1)}</span>
+              <span className="text-3xl font-bold text-white">
+                {stats.rating.toFixed(1)}
+              </span>
             </div>
             <p className="text-white/70 text-sm">Rating</p>
           </div>

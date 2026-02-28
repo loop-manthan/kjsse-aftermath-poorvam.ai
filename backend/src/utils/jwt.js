@@ -1,11 +1,13 @@
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 export const generateToken = (userId) => {
-  return jwt.sign(
-    { userId },
-    process.env.JWT_SECRET,
-    { expiresIn: '30d' }
-  );
+  if (!userId) {
+    throw new Error("userId is required to generate token");
+  }
+
+  return jwt.sign({ userId: userId.toString() }, process.env.JWT_SECRET, {
+    expiresIn: "30d",
+  });
 };
 
 export const verifyToken = (token) => {

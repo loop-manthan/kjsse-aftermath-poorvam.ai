@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { matchingService } from '../../api/services';
-import { useAuth } from '../../context/AuthContext';
-import { useJobs } from '../../context/JobContext';
-import { MapPin, DollarSign, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { useState, useEffect } from "react";
+import { matchingService } from "../../api/services";
+import { useAuth } from "../../context/AuthContext";
+import { useJobs } from "../../context/JobContext";
+import { MapPin, DollarSign, Clock, CheckCircle, XCircle } from "lucide-react";
+import { format } from "date-fns";
 
 const AvailableJobs = () => {
   const { user } = useAuth();
@@ -18,12 +18,12 @@ const AvailableJobs = () => {
 
   const fetchNearbyJobs = async () => {
     if (!user) return;
-    
+
     try {
       const { data } = await matchingService.getNearbyJobs(user._id, 10000);
       setNearbyJobs(data.jobs);
     } catch (error) {
-      console.error('Error fetching nearby jobs:', error);
+      console.error("Error fetching nearby jobs:", error);
     } finally {
       setLoading(false);
     }
@@ -35,7 +35,7 @@ const AvailableJobs = () => {
       await acceptJob(jobId);
       await fetchNearbyJobs();
     } catch (error) {
-      console.error('Error accepting job:', error);
+      console.error("Error accepting job:", error);
     } finally {
       setAcceptingJobId(null);
     }
@@ -57,8 +57,12 @@ const AvailableJobs = () => {
       <div className="glass-card rounded-2xl p-8">
         <div className="text-center py-12">
           <MapPin size={48} className="mx-auto text-white/40 mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">No Jobs Available</h3>
-          <p className="text-white/60">Check back later for new opportunities</p>
+          <h3 className="text-xl font-semibold text-white mb-2">
+            No Jobs Available
+          </h3>
+          <p className="text-white/60">
+            Check back later for new opportunities
+          </p>
         </div>
       </div>
     );
@@ -66,7 +70,9 @@ const AvailableJobs = () => {
 
   return (
     <div className="glass-card rounded-2xl p-6">
-      <h2 className="text-2xl font-bold mb-6 text-white">Available Jobs Near You</h2>
+      <h2 className="text-2xl font-bold mb-6 text-white">
+        Available Jobs Near You
+      </h2>
 
       <div className="space-y-4">
         {nearbyJobs.map((job) => (
@@ -76,7 +82,9 @@ const AvailableJobs = () => {
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-white mb-2">{job.description}</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  {job.description}
+                </h3>
                 <p className="text-white/60 text-sm">Job ID: {job.jobId}</p>
               </div>
               {job.distance && (
@@ -89,7 +97,9 @@ const AvailableJobs = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="flex items-center gap-2 text-white/70">
                 <DollarSign size={16} className="text-green-400" />
-                <span className="text-sm font-semibold text-green-400">₹{job.paymentOffer}</span>
+                <span className="text-sm font-semibold text-green-400">
+                  ₹{job.paymentOffer}
+                </span>
               </div>
 
               <div className="flex items-center gap-2 text-white/70">
@@ -100,11 +110,11 @@ const AvailableJobs = () => {
               <div className="flex items-center gap-2 text-white/70">
                 <Clock size={16} className="text-purple-400" />
                 <span className="text-sm">
-                  {format(new Date(job.createdAt), 'MMM dd, HH:mm')}
+                  {format(new Date(job.createdAt), "MMM dd, HH:mm")}
                 </span>
               </div>
 
-              {typeof job.clientId === 'object' && job.clientId && (
+              {typeof job.clientId === "object" && job.clientId && (
                 <div className="flex items-center gap-2 text-white/70">
                   <span className="text-sm">Client: {job.clientId.name}</span>
                 </div>
@@ -118,9 +128,9 @@ const AvailableJobs = () => {
                 className="flex-1 glass-button rounded-xl py-3 flex items-center justify-center gap-2 text-white bg-green-500/20 hover:bg-green-500/30 transition-all disabled:opacity-50"
               >
                 <CheckCircle size={18} />
-                {acceptingJobId === job._id ? 'Accepting...' : 'Accept Job'}
+                {acceptingJobId === job._id ? "Accepting..." : "Accept Job"}
               </button>
-              
+
               <button className="glass-button rounded-xl px-4 py-3 flex items-center justify-center gap-2 text-white hover:bg-red-500/20 transition-all">
                 <XCircle size={18} />
               </button>

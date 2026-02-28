@@ -1,24 +1,29 @@
-import { useAuth } from '../context/AuthContext';
-import { LogOut, Briefcase, Clock, TrendingUp } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import CreateJob from '../components/client/CreateJob';
-import ActiveJobs from '../components/client/ActiveJobs';
-import { useJobs } from '../context/JobContext';
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { LogOut, Briefcase, Clock, TrendingUp, Map } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import CreateJob from "../components/client/CreateJob";
+import ActiveJobs from "../components/client/ActiveJobs";
+import WorkerMap from "../components/client/WorkerMap";
+import { useJobs } from "../context/JobContext";
 
 const ClientDashboard = () => {
   const { user, logout } = useAuth();
   const { jobs } = useJobs();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"overview" | "map">("overview");
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const stats = {
     totalJobs: jobs.length,
-    activeJobs: jobs.filter((j) => ['assigned', 'accepted', 'in_progress'].includes(j.status)).length,
-    completedJobs: jobs.filter((j) => j.status === 'completed').length,
+    activeJobs: jobs.filter((j) =>
+      ["assigned", "accepted", "in_progress"].includes(j.status),
+    ).length,
+    completedJobs: jobs.filter((j) => j.status === "completed").length,
   };
 
   return (
@@ -53,54 +58,99 @@ const ClientDashboard = () => {
           <h1 className="text-4xl font-bold text-white mb-2">
             Welcome back, {user?.name}!
           </h1>
-          <p className="text-white/70">Manage your jobs and find workers instantly</p>
+          <p className="text-white/70">
+            Manage your jobs and find workers instantly
+          </p>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-4 mb-8">
+          <button
+            onClick={() => setActiveTab("overview")}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+              activeTab === "overview"
+                ? "glass-card text-white"
+                : "text-white/60 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <Briefcase size={20} />
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab("map")}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+              activeTab === "map"
+                ? "glass-card text-white"
+                : "text-white/60 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <Map size={20} />
+            Worker Map
+          </button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="glass-card rounded-2xl p-6 glass-hover cursor-pointer">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-full glass-nested flex items-center justify-center">
-                <Briefcase size={24} className="text-blue-400" />
+        {activeTab === "overview" && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="glass-card rounded-2xl p-6 glass-hover cursor-pointer">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-full glass-nested flex items-center justify-center">
+                    <Briefcase size={24} className="text-blue-400" />
+                  </div>
+                  <span className="text-3xl font-bold text-white">
+                    {stats.totalJobs}
+                  </span>
+                </div>
+                <p className="text-white/70 text-sm">Total Jobs</p>
               </div>
-              <span className="text-3xl font-bold text-white">{stats.totalJobs}</span>
-            </div>
-            <p className="text-white/70 text-sm">Total Jobs</p>
-          </div>
 
-          <div className="glass-card rounded-2xl p-6 glass-hover cursor-pointer">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-full glass-nested flex items-center justify-center">
-                <Clock size={24} className="text-yellow-400" />
+              <div className="glass-card rounded-2xl p-6 glass-hover cursor-pointer">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-full glass-nested flex items-center justify-center">
+                    <Clock size={24} className="text-yellow-400" />
+                  </div>
+                  <span className="text-3xl font-bold text-white">
+                    {stats.activeJobs}
+                  </span>
+                </div>
+                <p className="text-white/70 text-sm">Active Jobs</p>
               </div>
-              <span className="text-3xl font-bold text-white">{stats.activeJobs}</span>
-            </div>
-            <p className="text-white/70 text-sm">Active Jobs</p>
-          </div>
 
-          <div className="glass-card rounded-2xl p-6 glass-hover cursor-pointer">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-full glass-nested flex items-center justify-center">
-                <TrendingUp size={24} className="text-green-400" />
+              <div className="glass-card rounded-2xl p-6 glass-hover cursor-pointer">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-full glass-nested flex items-center justify-center">
+                    <TrendingUp size={24} className="text-green-400" />
+                  </div>
+                  <span className="text-3xl font-bold text-white">
+                    {stats.completedJobs}
+                  </span>
+                </div>
+                <p className="text-white/70 text-sm">Completed Jobs</p>
               </div>
-              <span className="text-3xl font-bold text-white">{stats.completedJobs}</span>
             </div>
-            <p className="text-white/70 text-sm">Completed Jobs</p>
-          </div>
-        </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Create Job Form */}
+            {/* Main Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Create Job Form */}
+              <div>
+                <CreateJob />
+              </div>
+
+              {/* Active Jobs List */}
+              <div>
+                <ActiveJobs />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Worker Map View */}
+        {activeTab === "map" && (
           <div>
-            <CreateJob />
+            <WorkerMap />
           </div>
-
-          {/* Active Jobs List */}
-          <div>
-            <ActiveJobs />
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
