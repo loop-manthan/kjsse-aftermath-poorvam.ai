@@ -313,20 +313,20 @@ describe('Phase 3.2 — Speech Pipeline', () => {
       expect(output[2]).toBe(6);
     });
 
-    it('should upsample 16kHz → 48kHz (repeat 3x)', () => {
+    it('should upsample 16kHz → 48kHz (linear interpolation)', () => {
       const input = new Int16Array(1600); // 100ms at 16kHz
       for (let i = 0; i < input.length; i++) input[i] = i * 10;
 
       const output = sarvamService.resample(input, 16000, 48000);
 
       expect(output.length).toBe(4800); // 1600 * 3
-      // Each sample repeated 3 times
-      expect(output[0]).toBe(0);
-      expect(output[1]).toBe(0);
-      expect(output[2]).toBe(0);
-      expect(output[3]).toBe(10);
-      expect(output[4]).toBe(10);
-      expect(output[5]).toBe(10);
+      // Linear interpolation: values smoothly transition between samples
+      expect(output[0]).toBe(0);     // exact match at source sample 0
+      expect(output[3]).toBe(10);    // exact match at source sample 1
+      expect(output[6]).toBe(20);    // exact match at source sample 2
+      // Intermediate values should be interpolated
+      expect(output[1]).toBeGreaterThan(0);
+      expect(output[1]).toBeLessThan(10);
     });
 
     it('should return same array if rates are equal', () => {

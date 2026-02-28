@@ -236,10 +236,10 @@ class VoiceAgentService {
 
   async _speak(room, text) {
     try {
-      // 1. Get TTS audio
+      // 1. Get TTS audio at native 48000Hz — matches LiveKit exactly, no resampling needed
       const wavBuffer = await sarvamService.textToSpeech(text, {
         languageCode: 'hi-IN',
-        sampleRate: 16000,
+        sampleRate: 48000,
       });
 
       if (!wavBuffer) {
@@ -251,18 +251,19 @@ class VoiceAgentService {
       const { pcm, sampleRate: ttsSampleRate, numChannels } = sarvamService.parseWav(wavBuffer);
       let samples = new Int16Array(pcm.buffer, pcm.byteOffset, pcm.length / 2);
 
-      // 3. Downmix if needed
+      // 3. Downmix if needed (rare — Sarvam typically returns mono)
       if (numChannels > 1) {
         samples = sarvamService.downmixToMono(samples, numChannels);
       }
 
-      // 4. Upsample to 48kHz for LiveKit
+      // 4. Validate sample rate — should be 48000 from Sarvam, no resampling needed
       const targetRate = 48000;
       if (ttsSampleRate !== targetRate) {
+        console.warn(`[VoiceAgent] TTS returned ${ttsSampleRate}Hz, expected ${targetRate}Hz. Resampling.`);
         samples = sarvamService.resample(samples, ttsSampleRate, targetRate);
       }
 
-      // 5. Create AudioSource and LocalAudioTrack
+      // 5. Create AudioSource and LocalAudioTrack at native 48kHz
       const source = new AudioSource(targetRate, 1);
       const track = LocalAudioTrack.createAudioTrack('tts-output', source);
 
@@ -273,9 +274,10 @@ class VoiceAgentService {
       await room.localParticipant.publishTrack(track, publishOptions);
       console.log('[VoiceAgent] TTS track published');
 
-      // 7. Feed frames with real-time pacing
-      const FRAME_SIZE = 480; // 480 samples at 48kHz = 10ms per frame
-      const frameDurationMs = (FRAME_SIZE / targetRate) * 1000; // 10ms
+      // 7. Feed frames with 50ms chunks (2400 samples at 48kHz)
+      //    Larger frames = fewer scheduling calls = dramatically less jitter
+      const FRAME_SIZE = 2400; // 50ms at 48kHz
+      const frameDurationMs = (FRAME_SIZE / targetRate) * 1000; // 50ms
 
       for (let offset = 0; offset < samples.length; offset += FRAME_SIZE) {
         const end = Math.min(offset + FRAME_SIZE, samples.length);
@@ -290,7 +292,7 @@ class VoiceAgentService {
 
         await source.captureFrame(frame);
 
-        // Real-time pacing — prevent audio stacking/distortion
+        // Real-time pacing with larger intervals — stable playback
         await this._delay(frameDurationMs);
       }
 

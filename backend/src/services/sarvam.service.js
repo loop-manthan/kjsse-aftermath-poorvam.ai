@@ -82,8 +82,8 @@ class SarvamService {
    * @param {string} text - Text to speak (max 2500 chars for v3)
    * @param {object} [options]
    * @param {string} [options.languageCode='hi-IN']
-   * @param {string} [options.speaker='Shubh']
-   * @param {number} [options.sampleRate=16000]
+   * @param {string} [options.speaker='amelia']
+   * @param {number} [options.sampleRate=48000]
    * @returns {Promise<Buffer|null>} WAV buffer or null on failure
    */
   async textToSpeech(text, options = {}) {
@@ -97,8 +97,8 @@ class SarvamService {
           text,
           target_language_code: options.languageCode || 'hi-IN',
           model: 'bulbul:v3',
-          speaker: options.speaker || 'shubh',
-          speech_sample_rate: options.sampleRate || 16000,
+          speaker: options.speaker || 'amelia',
+          speech_sample_rate: options.sampleRate || 48000,
         },
         {
           headers: {
@@ -212,12 +212,17 @@ class SarvamService {
     }
 
     if (ratio < 1) {
-      // Upsampling (e.g. 16000 → 48000, repeat each sample)
-      const repeatFactor = Math.round(toRate / fromRate);
-      const out = new Int16Array(samples.length * repeatFactor);
-      for (let i = 0; i < samples.length; i++) {
-        for (let j = 0; j < repeatFactor; j++) {
-          out[i * repeatFactor + j] = samples[i];
+      // Upsampling with linear interpolation for smooth output
+      const outLength = Math.round(samples.length * (toRate / fromRate));
+      const out = new Int16Array(outLength);
+      for (let i = 0; i < outLength; i++) {
+        const srcPos = i * (fromRate / toRate);
+        const idx = Math.floor(srcPos);
+        const frac = srcPos - idx;
+        if (idx + 1 < samples.length) {
+          out[i] = Math.round(samples[idx] * (1 - frac) + samples[idx + 1] * frac);
+        } else {
+          out[i] = samples[Math.min(idx, samples.length - 1)];
         }
       }
       return out;
