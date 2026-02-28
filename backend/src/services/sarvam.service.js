@@ -97,7 +97,7 @@ class SarvamService {
           text,
           target_language_code: options.languageCode || 'hi-IN',
           model: 'bulbul:v3',
-          speaker: options.speaker || 'amelia',
+          speaker: options.speaker || 'ratan',
           speech_sample_rate: options.sampleRate || 48000,
         },
         {

@@ -24,6 +24,7 @@ let AudioSource = null;
 let AudioFrame = null;
 let TrackPublishOptions = null;
 let TrackSource = null;
+let TrackKind = null;
 let rtcAvailable = false;
 
 try {
@@ -36,6 +37,7 @@ try {
   AudioFrame = rtc.AudioFrame;
   TrackPublishOptions = rtc.TrackPublishOptions;
   TrackSource = rtc.TrackSource;
+  TrackKind = rtc.TrackKind;
   rtcAvailable = true;
   console.log('[VoiceAgent] @livekit/rtc-node loaded successfully');
 } catch (err) {
@@ -43,7 +45,7 @@ try {
   console.warn('[VoiceAgent] Running in token-only mode.');
 }
 
-const LISTEN_DURATION_MS = 8_000;
+const LISTEN_DURATION_MS = 10_000;
 const SESSION_TIMEOUT_MS = 120_000;
 const GREETING_TEXT = 'Namaste! Poorvam AI mein aapka swagat hai. Aapko kya seva chahiye?';
 const FALLBACK_TEXT = 'Maaf kijiye, main samajh nahi paaya. Kripya dobara bolein.';
@@ -169,21 +171,31 @@ class VoiceAgentService {
     this._sessionResults.set(roomName, { status: 'running', events: [] });
 
     try {
-      // Speak greeting so the user knows the agent is alive
-      console.log(`[VOICE] STT-LLM debug mode — speaking greeting...`);
-      this._pushResult(roomName, { type: 'status', message: 'Speaking greeting…' });
-      await this._speak(room, GREETING_TEXT);
-
-      console.log(`[VOICE] STT-LLM debug mode — waiting for audio track...`);
-      this._pushResult(roomName, { type: 'status', message: 'Waiting for audio track…' });
-      const remoteTrack = await this._waitForAudioTrack(room, 15_000);
+      // Wait for the browser's mic track BEFORE speaking.
+      // The browser takes 2-4s to connect + enable mic. If we speak first,
+      // the TrackSubscribed event fires during TTS and is missed by _waitForAudioTrack.
+      console.log(`[VOICE] Waiting for remote audio track (30s)...`);
+      this._pushResult(roomName, { type: 'status', message: 'Waiting for browser mic…' });
+      const remoteTrack = await this._waitForAudioTrack(room, 30_000);
 
       if (!remoteTrack) {
-        console.log('[VOICE][STT] No audio track received within timeout.');
-        this._pushResult(roomName, { type: 'error', message: 'No audio track received within timeout.' });
+        console.log('[VOICE] No audio track received within 30s.');
+        this._pushResult(roomName, { type: 'error', message: 'No audio track received within 30s. Did you click Connect and allow mic?' });
         this._sessionResults.get(roomName).status = 'done';
         return;
       }
+
+      // Now greet — browser is already connected and mic is live
+      console.log(`[VOICE] Got mic — speaking greeting...`);
+      this._pushResult(roomName, { type: 'status', message: 'Speaking greeting…' });
+      await this._speak(room, GREETING_TEXT);
+
+      // Silence gap — let room acoustics clear before capturing user's voice.
+      // Without this, the STT picks up echo/resonance of the greeting itself.
+      await this._delay(1500);
+
+
+      // Listen for user's response
 
       this._pushResult(roomName, { type: 'status', message: `Listening for ${LISTEN_DURATION_MS / 1000}s…` });
       console.log(`[VOICE] Listening for ${LISTEN_DURATION_MS}ms...`);
@@ -256,23 +268,26 @@ class VoiceAgentService {
 
   async _runPipeline(roomName, room) {
     try {
-      // Step 1: Speak greeting
-      console.log(`[VoiceAgent] Speaking greeting...`);
-      await this._speak(room, GREETING_TEXT);
-
-      // Step 2: Wait for remote participant's audio track
-      console.log(`[VoiceAgent] Waiting for remote audio...`);
-      const remoteTrack = await this._waitForAudioTrack(room, 15_000);
+      // Step 1: Wait for the browser simulator to join and publish its mic.
+      //         Must happen BEFORE speaking — the browser takes a few seconds
+      //         to load, connect, and call setMicrophoneEnabled(true).
+      //         If we greet first, the track subscription fires during TTS playback
+      //         and is missed by _waitForAudioTrack.
+      console.log(`[VoiceAgent] Waiting for remote audio track...`);
+      const remoteTrack = await this._waitForAudioTrack(room, 30_000);
 
       if (!remoteTrack) {
-        console.warn(`[VoiceAgent] No audio track received. Prompting retry.`);
-        await this._speak(room, FALLBACK_TEXT);
-        await this._delay(2000);
+        console.warn(`[VoiceAgent] No audio track received within 30s. Ending session.`);
         await this.endSession(roomName);
         return;
       }
 
-      // Step 3: Listen for 8 seconds
+      console.log(`[VoiceAgent] Got remote audio — speaking greeting...`);
+
+      // Step 2: Speak greeting (browser is already connected and mic is live)
+      await this._speak(room, GREETING_TEXT);
+
+      // Step 3: Listen immediately after greeting (mic was already active in Step 1)
       console.log(`[VoiceAgent] Listening for ${LISTEN_DURATION_MS}ms...`);
       const wavBuffer = await this._listen(remoteTrack, LISTEN_DURATION_MS);
 
@@ -314,24 +329,37 @@ class VoiceAgentService {
     }
   }
 
+
+
   // ─────────────────────────────────────────
   //  PRIVATE: Listen — capture audio frames
   // ─────────────────────────────────────────
 
   async _listen(remoteTrack, durationMs) {
-    const frameBuffers = [];
     let capturedSampleRate = 48000;
     let capturedChannels = 1;
     let stream;
 
+    // VAD: only keep frames with RMS energy above this threshold.
+    // 200 filters out silence/echo; user speech is typically 800–4000.
+    const VAD_THRESHOLD = 200;
+
+    // Auto-stop after this many ms of consecutive silence post-speech
+    const SILENCE_STOP_MS = 2000;
+
+    const speechFrames = [];   // frames that passed VAD
+    let totalFrames = 0;
+    let hadSpeech = false;
+    let silenceStart = null;
+
     try {
       stream = new AudioStream(remoteTrack);
-
       const deadline = Date.now() + durationMs;
       let firstFrame = true;
 
       for await (const frame of stream) {
         if (Date.now() >= deadline) break;
+        totalFrames++;
 
         if (firstFrame) {
           capturedSampleRate = frame.sampleRate;
@@ -340,23 +368,40 @@ class VoiceAgentService {
           firstFrame = false;
         }
 
-        // frame.data is Int16Array (interleaved if multi-channel)
+        // Compute RMS energy of this frame
         const raw = new Int16Array(frame.data.buffer, frame.data.byteOffset, frame.data.length);
-        frameBuffers.push(Buffer.from(raw.buffer, raw.byteOffset, raw.byteLength));
+        let sumSq = 0;
+        for (let i = 0; i < raw.length; i++) sumSq += raw[i] * raw[i];
+        const rms = Math.sqrt(sumSq / raw.length);
+
+        if (rms >= VAD_THRESHOLD) {
+          // Speech frame — collect it
+          speechFrames.push(Buffer.from(raw.buffer, raw.byteOffset, raw.byteLength));
+          hadSpeech = true;
+          silenceStart = null;
+        } else if (hadSpeech) {
+          // Silent frame AFTER speech — track how long silence has lasted
+          if (!silenceStart) silenceStart = Date.now();
+          if (Date.now() - silenceStart >= SILENCE_STOP_MS) {
+            console.log('[VoiceAgent] 2s silence after speech → stopping capture early');
+            break;
+          }
+        }
       }
     } catch (err) {
       console.error('[VoiceAgent] Audio capture error:', err.message);
     }
 
-    // Stream cleanup happens when the for-await exits
     if (stream && typeof stream.close === 'function') {
       try { stream.close(); } catch (_) {}
     }
 
-    if (frameBuffers.length === 0) return null;
+    console.log(`[VoiceAgent] VAD: ${speechFrames.length}/${totalFrames} frames accepted (RMS≥${VAD_THRESHOLD})`);
 
-    // Concatenate all captured PCM
-    const rawPcm = Buffer.concat(frameBuffers);
+    if (speechFrames.length === 0) return null;
+
+    // Concatenate speech-only PCM
+    const rawPcm = Buffer.concat(speechFrames);
     let samples = new Int16Array(rawPcm.buffer, rawPcm.byteOffset, rawPcm.length / 2);
 
     // Downmix to mono if multi-channel
@@ -365,13 +410,12 @@ class VoiceAgentService {
       samples = sarvamService.downmixToMono(samples, capturedChannels);
     }
 
-    // Resample to 16kHz
+    // Resample to 16kHz for Sarvam STT
     if (capturedSampleRate !== 16000) {
       console.log(`[VoiceAgent] Resampling ${capturedSampleRate}Hz → 16000Hz`);
       samples = sarvamService.resample(samples, capturedSampleRate, 16000);
     }
 
-    // Build WAV
     const pcmBuffer = Buffer.from(samples.buffer, samples.byteOffset, samples.byteLength);
     return sarvamService.createWavBuffer(pcmBuffer, 16000, 1);
   }
@@ -381,8 +425,13 @@ class VoiceAgentService {
   // ─────────────────────────────────────────
 
   async _speak(room, text) {
+    // Declared outside try so finally block can access them
+    let source = null;
+    let trackSid = null;
+
     try {
-      // 1. Get TTS audio at native 48000Hz — matches LiveKit exactly, no resampling needed
+      // 1. TTS call
+      console.log('[VoiceAgent] Requesting TTS...');
       const wavBuffer = await sarvamService.textToSpeech(text, {
         languageCode: 'hi-IN',
         sampleRate: 48000,
@@ -392,63 +441,95 @@ class VoiceAgentService {
         console.error('[VoiceAgent] TTS returned null. Skipping playback.');
         return;
       }
+      console.log(`[VoiceAgent] TTS buffer length: ${wavBuffer.length}`);
 
-      // 2. Parse WAV and extract PCM
+      // 2. Parse WAV
       const { pcm, sampleRate: ttsSampleRate, numChannels } = sarvamService.parseWav(wavBuffer);
-      let samples = new Int16Array(pcm.buffer, pcm.byteOffset, pcm.length / 2);
+      console.log(`[VoiceAgent] PCM length: ${pcm.length}, sampleRate: ${ttsSampleRate}, channels: ${numChannels}`);
 
-      // 3. Downmix if needed (rare — Sarvam typically returns mono)
+      const pcmCopy = Buffer.from(pcm);
+      let samples = new Int16Array(pcmCopy.buffer, pcmCopy.byteOffset, pcmCopy.length / 2);
+
       if (numChannels > 1) {
         samples = sarvamService.downmixToMono(samples, numChannels);
       }
 
-      // 4. Validate sample rate — should be 48000 from Sarvam, no resampling needed
       const targetRate = 48000;
       if (ttsSampleRate !== targetRate) {
-        console.warn(`[VoiceAgent] TTS returned ${ttsSampleRate}Hz, expected ${targetRate}Hz. Resampling.`);
+        console.warn(`[VoiceAgent] TTS ${ttsSampleRate}Hz → resampling to ${targetRate}Hz`);
         samples = sarvamService.resample(samples, ttsSampleRate, targetRate);
       }
 
-      // 5. Create AudioSource and LocalAudioTrack at native 48kHz
-      const source = new AudioSource(targetRate, 1);
+      // 3. Create AudioSource + track
+      source = new AudioSource(targetRate, 1);
       const track = LocalAudioTrack.createAudioTrack('tts-output', source);
 
-      // 6. Publish track
-      const publishOptions = new TrackPublishOptions({
-        source: TrackSource.SOURCE_MICROPHONE,
-      });
+      // 4. Publish
+      console.log('[VoiceAgent] Publishing TTS track...');
+      const publishOptions = new TrackPublishOptions({ source: TrackSource.SOURCE_MICROPHONE });
       await room.localParticipant.publishTrack(track, publishOptions);
-      console.log('[VoiceAgent] TTS track published');
 
-      // 7. Feed frames with 50ms chunks (2400 samples at 48kHz)
-      //    Larger frames = fewer scheduling calls = dramatically less jitter
-      const FRAME_SIZE = 2400; // 50ms at 48kHz
-      const frameDurationMs = (FRAME_SIZE / targetRate) * 1000; // 50ms
+      // Find the real SID string by scanning the Map of published tracks.
+      // trackPublications is a Map<string, LocalTrackPublication> keyed by SID.
+      // We match by the track object reference to get the guaranteed string key.
+      for (const [sid, pub] of room.localParticipant.trackPublications) {
+        if (pub.track === track) {
+          trackSid = sid; // sid here is always a plain string
+          break;
+        }
+      }
+      console.log(`[VoiceAgent] TTS track published (sid: ${trackSid ?? 'unknown'})`);
+
+      // 5. Settle before feeding frames
+      await this._delay(150);
+
+      // 6. Feed 50ms frames (2400 samples @ 48kHz)
+      const FRAME_SIZE = 2400;
+      const frameDurationMs = (FRAME_SIZE / targetRate) * 1000;
+      let frameCount = 0;
 
       for (let offset = 0; offset < samples.length; offset += FRAME_SIZE) {
         const end = Math.min(offset + FRAME_SIZE, samples.length);
-        const chunk = samples.slice(offset, end);
+        const chunkSamples = samples.slice(offset, end);
 
-        const frame = new AudioFrame(
-          Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength),
-          targetRate,
-          1,
-          chunk.length
-        );
+        // Each frame must have its own standalone Buffer.
+        // Never pass a typed-array view that shares an ArrayBuffer with other frames —
+        // the Rust FFI receives "[object Object]" and panics at room.rs:524.
+        const frameBuf = Buffer.alloc(chunkSamples.byteLength);
+        Buffer.from(
+          chunkSamples.buffer,
+          chunkSamples.byteOffset,
+          chunkSamples.byteLength
+        ).copy(frameBuf);
 
-        await source.captureFrame(frame);
-
-        // Real-time pacing with larger intervals — stable playback
+        await source.captureFrame(new AudioFrame(frameBuf, targetRate, 1, chunkSamples.length));
+        frameCount++;
         await this._delay(frameDurationMs);
       }
 
-      // 8. Brief pause after last frame, then unpublish
-      await this._delay(200);
-      await room.localParticipant.unpublishTrack(track);
-      console.log('[VoiceAgent] TTS track unpublished');
+      console.log(`[VoiceAgent] Finished feeding ${frameCount} frames`);
+
+      // 7. Flush — let WebRTC drain all frames before teardown
+      await this._delay(600);
 
     } catch (err) {
       console.error('[VoiceAgent] Speak failed:', err.message);
+      // Do NOT rethrow — pipeline must continue
+    } finally {
+      // 8. Unpublish in finally so it always runs, even on error.
+      //    MUST pass the SID string — NEVER the track or publication object.
+      //    Passing an object makes Rust receive "[object Object]" → panic at room.rs:524.
+      if (trackSid && typeof trackSid === 'string') {
+        try {
+          await room.localParticipant.unpublishTrack(trackSid);
+          console.log('[VoiceAgent] TTS track unpublished');
+        } catch (unpubErr) {
+          // Non-fatal: room.disconnect() will clean up the track
+          console.warn('[VoiceAgent] Unpublish skipped (non-fatal):', unpubErr.message);
+        }
+      } else {
+        console.warn('[VoiceAgent] No trackSid found — skipping unpublish, disconnect will clean up');
+      }
     }
   }
 
@@ -458,23 +539,31 @@ class VoiceAgentService {
 
   _waitForAudioTrack(room, timeoutMs) {
     return new Promise((resolve) => {
-      // Check existing participants first
+      // TrackKind is a numeric enum: KIND_AUDIO = 1, KIND_VIDEO = 2
+      // CRITICAL: comparing track.kind === 'audio' always fails — it's a number
+      const AUDIO = TrackKind ? TrackKind.KIND_AUDIO : 1;
+
+      // Check existing subscribed tracks first (browser may have joined earlier)
       for (const participant of room.remoteParticipants.values()) {
         for (const pub of participant.trackPublications.values()) {
-          if (pub.track && pub.kind === 'audio') {
+          console.log(`[VoiceAgent] Existing pub: kind=${pub.kind} track=${!!pub.track} from=${participant.identity}`);
+          if (pub.track && pub.kind === AUDIO) {
+            console.log(`[VoiceAgent] Found existing audio track from: ${participant.identity}`);
             resolve(pub.track);
             return;
           }
         }
       }
 
-      // Otherwise wait for subscription
+      // Wait for the TrackSubscribed event
+      console.log('[VoiceAgent] No existing audio track — waiting for TrackSubscribed...');
       let timer;
       const handler = (track, publication, participant) => {
-        if (track.kind === 'audio') {
+        console.log(`[VoiceAgent] TrackSubscribed: kind=${track.kind} (AUDIO=${AUDIO}) from=${participant.identity}`);
+        if (track.kind === AUDIO) {
           clearTimeout(timer);
           room.off(RoomEvent.TrackSubscribed, handler);
-          console.log(`[VoiceAgent] Got audio from: ${participant.identity}`);
+          console.log(`[VoiceAgent] Got audio track from: ${participant.identity}`);
           resolve(track);
         }
       };
