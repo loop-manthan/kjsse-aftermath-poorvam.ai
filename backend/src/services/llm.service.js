@@ -22,7 +22,11 @@ const FALLBACK_REPLY = 'Maaf kijiye, abhi response generate nahi ho pa raha. Kri
  * @returns {Promise<string>} LLM reply text (never throws)
  */
 export async function generateReply({ systemPrompt, userText }) {
-  const provider = (process.env.LLM_PROVIDER || 'huggingface').toLowerCase();
+  const provider = (process.env.LLM_PROVIDER || 'sarvam').toLowerCase();
+
+  if (provider === 'sarvam') {
+    return _sarvam(systemPrompt, userText);
+  }
 
   if (provider === 'huggingface' || provider === 'hf') {
     return _huggingface(systemPrompt, userText);
@@ -32,9 +36,77 @@ export async function generateReply({ systemPrompt, userText }) {
     return _gemini(systemPrompt, userText);
   }
 
-  console.error(`[LLM] Unknown provider: "${provider}". Set LLM_PROVIDER=huggingface or gemini in .env`);
+  console.error(`[LLM] Unknown provider: "${provider}". Set LLM_PROVIDER=sarvam|gemini|huggingface`);
   return FALLBACK_REPLY;
 }
+
+// ───────────────────────────────────────
+//  Sarvam Chat API (OpenAI-compatible)
+// ───────────────────────────────────────
+
+async function _sarvam(systemPrompt, userText) {
+  const apiKey = process.env.SARVAM_API_KEY;
+  // Use chat completions endpoint (OpenAI-compatible)
+  const url = 'https://api.sarvam.ai/v1/chat/completions';
+  const model = process.env.SARVAM_CHAT_MODEL || 'sarvam-m';
+  const timeoutMs = parseInt(process.env.LLM_TIMEOUT_MS, 10) || 15_000;
+
+  if (!apiKey) {
+    console.error('[LLM] SARVAM_API_KEY is not set.');
+    return FALLBACK_REPLY;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userText },
+        ],
+        max_tokens: 200,
+        temperature: 0.7,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      console.error(`[LLM] Sarvam HTTP ${res.status}: ${errBody.slice(0, 300)}`);
+      return FALLBACK_REPLY;
+    }
+
+    const data = await res.json();
+    const reply = data?.choices?.[0]?.message?.content?.trim();
+
+    if (!reply) {
+      console.error('[LLM] Sarvam returned empty reply:', JSON.stringify(data).slice(0, 200));
+      return FALLBACK_REPLY;
+    }
+
+    console.log(`[LLM] Sarvam reply: "${reply.slice(0, 80)}"`);
+    return reply;
+
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      console.error(`[LLM] Sarvam timed out after ${timeoutMs}ms`);
+    } else {
+      console.error('[LLM] Sarvam request failed:', err.message);
+    }
+    return FALLBACK_REPLY;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 
 // ───────────────────────────────────────
 //  HuggingFace Inference API (Mistral/any chat model)

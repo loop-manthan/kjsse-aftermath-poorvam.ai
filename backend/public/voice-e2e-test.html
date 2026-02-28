@@ -3,22 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Voice E2E Test — STT → Gemini</title>
+  <title>aftermath-hacks — Voice E2E Test</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Segoe UI',system-ui,sans-serif;background:#09090b;color:#e4e4e7;min-height:100vh;padding:1.5rem}
-    .container{max-width:960px;margin:0 auto}
-    h1{font-size:1.4rem;color:#fff;margin-bottom:.15rem}
+    .container{max-width:1080px;margin:0 auto}
+    h1{font-size:1.5rem;color:#fff;margin-bottom:.15rem;display:flex;align-items:center;gap:.5rem}
+    .badge{font-size:.55rem;padding:.2rem .5rem;border-radius:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+    .badge.mock{background:#eab308;color:#000}
+    .badge.live{background:#22c55e;color:#000}
     .sub{font-size:.78rem;color:#71717a;margin-bottom:1.5rem}
-    /* ── Grid layout ── */
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-    @media(max-width:720px){.grid{grid-template-columns:1fr}}
+    /* ── Grid ── */
+    .grid{display:grid;grid-template-columns:340px 1fr;gap:1rem}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}}
     .panel{background:#18181b;border:1px solid #27272a;border-radius:12px;padding:1.25rem}
-    .panel h2{font-size:.85rem;color:#a1a1aa;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem}
+    .panel h2{font-size:.82rem;color:#a1a1aa;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem}
     /* ── Inputs ── */
-    label{display:block;font-size:.75rem;color:#71717a;margin-bottom:.2rem}
+    label{display:block;font-size:.72rem;color:#71717a;margin-bottom:.2rem}
     input,select{width:100%;padding:.5rem .65rem;background:#0a0a0a;border:1px solid #333;border-radius:6px;color:#fff;font-size:.8rem;margin-bottom:.6rem}
-    input:focus,select:focus{outline:none;border-color:#22c55e}
+    input:focus{outline:none;border-color:#a855f7}
     /* ── Buttons ── */
     .btn-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
     button{padding:.55rem .9rem;border:none;border-radius:6px;font-size:.8rem;cursor:pointer;font-weight:600;transition:.15s}
@@ -28,45 +31,78 @@
     .btn-blue{background:#3b82f6;color:#fff}
     .btn-yellow{background:#eab308;color:#000}
     .btn-ghost{background:#27272a;color:#d4d4d8}
-    /* ── Status ── */
+    /* ── Status bar ── */
     .status-bar{margin-top:.75rem;padding:.45rem .7rem;background:#111;border-radius:6px;display:flex;align-items:center;gap:.45rem;font-size:.78rem}
     .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
     .dot.off{background:#555}.dot.wait{background:#eab308;animation:pulse 1s infinite}.dot.on{background:#22c55e}.dot.err{background:#ef4444}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    /* ── Stage tracker ── */
+    .stage-track{display:flex;gap:0;margin:.75rem 0;overflow-x:auto}
+    .stage-pill{padding:.35rem .6rem;font-size:.68rem;font-weight:600;border:1px solid #27272a;background:#111;color:#71717a;white-space:nowrap;position:relative}
+    .stage-pill:first-child{border-radius:6px 0 0 6px}
+    .stage-pill:last-child{border-radius:0 6px 6px 0}
+    .stage-pill.active{background:#a855f7;color:#fff;border-color:#a855f7;z-index:1}
+    .stage-pill.done{background:#22c55e20;color:#22c55e;border-color:#22c55e40}
+    .stage-pill.upcoming{background:#18181b;color:#52525b}
     /* ── Participants ── */
     .part-list{list-style:none;font-size:.8rem;margin-top:.4rem}
     .part-list li{padding:.15rem 0;display:flex;align-items:center;gap:.35rem}
     .part-list li::before{content:'👤';font-size:.65rem}
     /* ── Event log ── */
-    .log{margin-top:.75rem;padding:.6rem;background:#0a0a0a;border:1px solid #1e1e1e;border-radius:8px;font-family:'Cascadia Code','Fira Code',monospace;font-size:.72rem;max-height:200px;overflow-y:auto;line-height:1.55}
+    .log{padding:.6rem;background:#0a0a0a;border:1px solid #1e1e1e;border-radius:8px;font-family:'Cascadia Code','Fira Code',monospace;font-size:.7rem;max-height:180px;overflow-y:auto;line-height:1.55}
     .log .t{color:#555}
     .log .info{color:#22c55e}
     .log .warn{color:#eab308}
     .log .error{color:#ef4444}
-    /* ── Results cards ── */
-    .result-card{margin-top:.6rem;padding:.75rem;border-radius:8px;border:1px solid #27272a;background:#111}
-    .result-card h3{font-size:.75rem;color:#a1a1aa;margin-bottom:.35rem}
-    .result-card .val{font-size:.9rem;color:#fff;white-space:pre-wrap;word-break:break-word;line-height:1.5}
-    .result-card .meta{font-size:.7rem;color:#71717a;margin-top:.25rem}
+    /* ── Result cards ── */
+    .result-card{margin-top:.6rem;padding:.7rem .85rem;border-radius:8px;border:1px solid #27272a;background:#111}
+    .result-card h3{font-size:.72rem;color:#a1a1aa;margin-bottom:.3rem;display:flex;align-items:center;gap:.35rem}
+    .result-card .val{font-size:.88rem;color:#fff;white-space:pre-wrap;word-break:break-word;line-height:1.5}
+    .result-card .meta{font-size:.68rem;color:#71717a;margin-top:.25rem}
     .result-card.stt{border-left:3px solid #3b82f6}
     .result-card.llm{border-left:3px solid #a855f7}
     .result-card.err{border-left:3px solid #ef4444}
     .result-card.status{border-left:3px solid #eab308}
+    .result-card.stage{border-left:3px solid #06b6d4}
+    .result-card.data{border-left:3px solid #22c55e;background:#22c55e08}
+    .result-card.data table{width:100%;border-collapse:collapse;font-size:.78rem}
+    .result-card.data td{padding:.25rem .4rem;border-bottom:1px solid #1e1e1e}
+    .result-card.data td:first-child{color:#a1a1aa;width:80px}
+    .result-card.data td:last-child{color:#fff;font-weight:500}
+    .mock-badge{display:inline-block;font-size:.55rem;padding:.1rem .35rem;border-radius:4px;background:#eab308;color:#000;font-weight:700;margin-left:.3rem;vertical-align:middle}
     /* ── Health ── */
     .health-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;font-size:.78rem}
     .health-item{background:#0a0a0a;border-radius:6px;padding:.4rem .6rem;display:flex;justify-content:space-between}
     .health-item .k{color:#a1a1aa}.health-item .v{color:#fff;font-weight:600}
-    /* ── Full width ── */
-    .full{grid-column:1/-1}
-    .spinner{display:inline-block;width:14px;height:14px;border:2px solid #555;border-top-color:#22c55e;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-left:.4rem}
+    /* ── Final summary ── */
+    .final-summary{margin-top:.75rem;padding:1rem;border-radius:10px;background:linear-gradient(135deg,#22c55e10,#a855f710);border:1px solid #22c55e40}
+    .final-summary h3{font-size:.85rem;color:#22c55e;margin-bottom:.5rem}
+    .final-summary table{width:100%;border-collapse:collapse}
+    .final-summary td{padding:.3rem .5rem;font-size:.82rem;border-bottom:1px solid #27272a}
+    .final-summary td:first-child{color:#a1a1aa;width:90px}
+    .final-summary td:last-child{color:#fff;font-weight:500}
+    /* ── Misc ── */
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid #555;border-top-color:#a855f7;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-left:.4rem}
     @keyframes spin{to{transform:rotate(360deg)}}
     .hidden{display:none}
+    .full{grid-column:1/-1}
   </style>
 </head>
 <body>
 <div class="container">
-  <h1>🎙️ Voice E2E Test — STT → Gemini Debug</h1>
-  <p class="sub">Connect to a LiveKit room, speak Hindi/English, see transcript + LLM reply in real time.</p>
+  <h1>🎙️ aftermath-hacks <span class="badge mock" id="modeBadge">MOCK</span></h1>
+  <p class="sub">Hindi voice assistant for blue-collar workers — Multi-turn E2E test console</p>
+
+  <!-- ── Stage Progress Tracker ── -->
+  <div class="stage-track" id="stageTrack">
+    <div class="stage-pill upcoming" data-stage="JOB_TYPE">1. काम</div>
+    <div class="stage-pill upcoming" data-stage="JOB_SUBTYPE">2. प्रकार</div>
+    <div class="stage-pill upcoming" data-stage="AREA">3. इलाका</div>
+    <div class="stage-pill upcoming" data-stage="INCOME">4. कमाई</div>
+    <div class="stage-pill upcoming" data-stage="AGE">5. उम्र</div>
+    <div class="stage-pill upcoming" data-stage="CONFIRM">6. पुष्टि</div>
+    <div class="stage-pill upcoming" data-stage="DONE">✅ पूरा</div>
+  </div>
 
   <div class="grid">
 
@@ -89,6 +125,12 @@
         <input id="roomInput" placeholder="e.g. test-room-1">
         <label>Simulator Identity (auto if empty)</label>
         <input id="identityInput" placeholder="e.g. tester-1">
+        <label>Language</label>
+        <select id="langSelect" style="background:#0a0a0a;border:1px solid #333;border-radius:6px;color:#fff;padding:.5rem .65rem;font-size:.8rem;margin-bottom:.6rem;width:100%">
+          <option value="hi-IN" selected>🇮🇳 हिन्दी (Hindi)</option>
+          <option value="gu-IN">🇮🇳 ગુજરાતી (Gujarati)</option>
+          <option value="mr-IN">🇮🇳 मराठी (Marathi)</option>
+        </select>
         <div class="btn-row">
           <button class="btn-green" id="connectBtn">▶ Connect &amp; Start</button>
           <button class="btn-red" id="disconnectBtn" disabled>⏹ Disconnect</button>
@@ -115,6 +157,13 @@
         </div>
         <div id="manualResult" class="log hidden" style="margin-top:.6rem"></div>
       </div>
+
+      <!-- Event Log -->
+      <div class="panel">
+        <h2>📋 Event Log</h2>
+        <button class="btn-ghost" id="clearLogBtn" style="margin-bottom:.5rem;padding:.3rem .6rem;font-size:.7rem">Clear</button>
+        <div class="log" id="logArea"></div>
+      </div>
     </div>
 
     <!-- ═══════ RIGHT: Output ═══════ -->
@@ -122,20 +171,21 @@
 
       <!-- Pipeline Results -->
       <div class="panel">
-        <h2>📝 Pipeline Output</h2>
+        <h2>📝 Conversation Pipeline</h2>
         <p style="font-size:.72rem;color:#71717a;margin-bottom:.5rem">
-          After connecting, speak for ~8 seconds. Results auto-poll from backend.
+          Stages: काम → प्रकार → इलाका → कमाई → उम्र → पुष्टि → पूरा
         </p>
         <div id="resultsArea">
-          <div style="color:#555;font-size:.8rem;text-align:center;padding:2rem 0">No results yet. Connect and speak to start.</div>
+          <div style="color:#555;font-size:.8rem;text-align:center;padding:2rem 0">
+            No results yet. Click <b>Connect &amp; Start</b> to begin.
+          </div>
         </div>
       </div>
 
-      <!-- Event Log -->
-      <div class="panel">
-        <h2>📋 Event Log</h2>
-        <button class="btn-ghost" id="clearLogBtn" style="margin-bottom:.5rem;padding:.3rem .6rem;font-size:.7rem">Clear</button>
-        <div class="log" id="logArea"></div>
+      <!-- Collected Data Summary (shown at end) -->
+      <div class="panel hidden" id="summaryPanel">
+        <h2>📊 Collected Data</h2>
+        <div id="summaryArea"></div>
       </div>
 
     </div>
@@ -154,6 +204,16 @@
   let currentRoom = '';
   let pollTimer = null;
   let lastEventCount = 0;
+
+  const STAGES = ['JOB_TYPE','JOB_SUBTYPE','AREA','INCOME','AGE','CONFIRM','DONE'];
+  const STAGE_LABELS = {
+    JOB_TYPE:'काम', JOB_SUBTYPE:'प्रकार', AREA:'इलाका',
+    INCOME:'कमाई', AGE:'उम्र', CONFIRM:'पुष्टि', DONE:'पूरा'
+  };
+  const DATA_LABELS = {
+    jobType:'काम (Job Type)', jobSubtype:'प्रकार (Subtype)',
+    area:'इलाका (Area)', income:'कमाई (Income)', age:'उम्र (Age)'
+  };
 
   // ── UI Helpers ──
   const $ = (id) => document.getElementById(id);
@@ -180,32 +240,82 @@
     $('partList').innerHTML = parts.map(p => `<li>${p.id}${p.local ? ' <span style="color:#555">(you)</span>' : ''}</li>`).join('');
   }
 
+  // ── Stage tracker UI ──
+  function updateStageTracker(currentStage) {
+    const idx = STAGES.indexOf(currentStage);
+    document.querySelectorAll('.stage-pill').forEach((pill, i) => {
+      pill.className = 'stage-pill';
+      if (i < idx) pill.classList.add('done');
+      else if (i === idx) pill.classList.add('active');
+      else pill.classList.add('upcoming');
+    });
+  }
+
   // ── Render result cards ──
   function renderResults(data) {
     const area = $('resultsArea');
     if (!data || !data.events || data.events.length === 0) return;
 
     let html = '';
+    let latestData = null;
+    let latestStage = null;
+
     for (const ev of data.events) {
       const time = new Date(ev.ts).toLocaleTimeString();
-      if (ev.type === 'stt') {
+
+      if (ev.type === 'stage') {
+        latestStage = ev.stage;
+        updateStageTracker(ev.stage);
+        html += `<div class="result-card stage">
+          <h3>🔄 Stage: ${STAGE_LABELS[ev.stage] || ev.stage}</h3>
+          <div class="meta">${time}</div>
+        </div>`;
+
+      } else if (ev.type === 'stt') {
+        const mockTag = ev.mock ? '<span class="mock-badge">MOCK</span>' : '';
         html += `<div class="result-card stt">
-          <h3>🎤 STT Transcript</h3>
+          <h3>🎤 STT Transcript ${mockTag}</h3>
           <div class="val">${ev.transcript || '<empty>'}</div>
           <div class="meta">${ev.durationMs}ms · ${time}</div>
         </div>`;
+
       } else if (ev.type === 'llm') {
+        const stageTag = ev.stage ? ` <span style="color:#06b6d4;font-size:.65rem">[${STAGE_LABELS[ev.stage] || ev.stage}]</span>` : '';
         html += `<div class="result-card llm">
-          <h3>🤖 Gemini Reply</h3>
+          <h3>🤖 LLM Reply${stageTag}</h3>
           <div class="val">${ev.reply}</div>
           <div class="meta">${ev.durationMs}ms · ${time}</div>
         </div>`;
+
+      } else if (ev.type === 'data') {
+        latestData = ev.data;
+        // Render inline data table
+        let rows = '';
+        for (const [key, label] of Object.entries(DATA_LABELS)) {
+          const val = ev.data[key];
+          rows += `<tr><td>${label}</td><td>${val || '<pending>'}</td></tr>`;
+        }
+        html += `<div class="result-card data">
+          <h3>📦 Collected Data</h3>
+          <table>${rows}</table>
+          <div class="meta">${time}</div>
+        </div>`;
+
+      } else if (ev.type === 'summary') {
+        latestData = ev.data;
+        html += `<div class="result-card data" style="border-left-color:#a855f7;background:#a855f708">
+          <h3>🔊 Final Summary (spoken via TTS)</h3>
+          <div class="val">${ev.summary}</div>
+          <div class="meta">${time}</div>
+        </div>`;
+
       } else if (ev.type === 'error') {
         html += `<div class="result-card err">
           <h3>❌ Error</h3>
           <div class="val">${ev.message}</div>
           <div class="meta">${time}</div>
         </div>`;
+
       } else if (ev.type === 'status') {
         html += `<div class="result-card status">
           <h3>⏳ Status</h3>
@@ -217,9 +327,33 @@
 
     if (data.status === 'done' || data.status === 'error') {
       html += `<div style="text-align:center;color:#71717a;font-size:.75rem;margin-top:.5rem">Pipeline ${data.status}.</div>`;
+
+      // Show final summary card
+      if (latestData) {
+        updateStageTracker('DONE');
+        showFinalSummary(latestData);
+      }
     }
 
     area.innerHTML = html;
+    // Auto-scroll to bottom
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function showFinalSummary(data) {
+    const panel = $('summaryPanel');
+    panel.classList.remove('hidden');
+    let rows = '';
+    for (const [key, label] of Object.entries(DATA_LABELS)) {
+      const val = data[key];
+      const icon = val ? '✅' : '❌';
+      rows += `<tr><td>${icon} ${label}</td><td>${val || '—'}</td></tr>`;
+    }
+    $('summaryArea').innerHTML = `
+      <div class="final-summary">
+        <h3>✅ Worker Registration Complete</h3>
+        <table>${rows}</table>
+      </div>`;
   }
 
   // ── Poll results ──
@@ -245,7 +379,10 @@
   function startPolling(roomName) {
     currentRoom = roomName;
     lastEventCount = 0;
-    $('resultsArea').innerHTML = '<div style="color:#eab308;font-size:.8rem;text-align:center;padding:1rem 0">⏳ Waiting for pipeline results…</div>';
+    $('resultsArea').innerHTML = '<div style="color:#eab308;font-size:.8rem;text-align:center;padding:1rem 0">⏳ Waiting for pipeline…</div>';
+    $('summaryPanel').classList.add('hidden');
+    // Reset stage tracker
+    updateStageTracker('');
     pollTimer = setInterval(pollResults, 800);
   }
 
@@ -296,8 +433,14 @@
       const body = {};
       const rn = $('roomInput').value.trim();
       const id = $('identityInput').value.trim();
+      const lang = $('langSelect').value;
       if (rn) body.roomName = rn;
       if (id) body.simulatorIdentity = id;
+      body.language = lang;
+
+      // Update badge to show selected language
+      const langNames = { 'hi-IN': 'HINDI', 'gu-IN': 'GUJARATI', 'mr-IN': 'MARATHI' };
+      $('modeBadge').textContent = `MOCK · ${langNames[lang] || lang}`;
 
       const res = await fetch(`${API}/sessions/initiate`, {
         method: 'POST',
@@ -341,7 +484,7 @@
 
       try {
         await room.localParticipant.setMicrophoneEnabled(true);
-        log('🎤 Microphone enabled — speak now (8s capture window)');
+        log('🎤 Microphone enabled — multi-turn conversation starting');
       } catch (micErr) {
         log(`⚠️ Mic failed: ${micErr.message}`, 'warn');
       }

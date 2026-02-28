@@ -47,45 +47,176 @@ try {
 
 const LISTEN_DURATION_MS = 10_000;
 const SESSION_TIMEOUT_MS = 120_000;
-const GREETING_TEXT = 'Namaste! Poorvam AI mein aapka swagat hai. Aapko kya seva chahiye?';
-const FALLBACK_TEXT = 'Maaf kijiye, main samajh nahi paaya. Kripya dobara bolein.';
-const ECHO_PREFIX = 'Aapne kaha: ';
 
-// ── aftermath-hacks agent system prompt ──
-const AGENT_SYSTEM_PROMPT = `You are "aftermath-hacks", a patient, clear, and reassuring Hindi-speaking voice assistant for blue-collar workers.
+// ═══════════════════════════════════════════════
+//  Multi-language config: Hindi, Gujarati, Marathi
+// ═══════════════════════════════════════════════
 
-DEMEANOUR & IDENTITY
-- Speak slowly when needed; listen carefully; repeat information to ensure understanding.
-- Use simple, colloquial Hindi only (no English except very common job terms the worker uses).
-- Never guess missing information — ask calmly for more details.
-- Never share or ask for sensitive data (OTP, Aadhaar, bank details, payments). Warn the worker if asked.
-- Maintain a warm, respectful, encouraging tone.
+const LANG_CONFIG = {
+  'hi-IN': {
+    greeting: 'नमस्ते! आपको किसी की नौकरी चाहिए?',
+    fallback: 'माफ़ कीजिए, मैं समझ नहीं पाया। कृपया दोबारा बोलिए।',
+    mock: {
+      JOB_TYPE:    'मुझे सफाई की नौकरी चाहिए',
+      JOB_SUBTYPE: 'घरेलू सफाई',
+      AREA:        'अंधेरी',
+      INCOME:      'महीने का 10000 रुपये',
+      AGE:         '25 साल',
+    },
+    summaryTemplate: (d) =>
+      `आपकी जानकारी — काम: ${d.jobType || 'अज्ञात'}, ` +
+      `प्रकार: ${d.jobSubtype || 'अज्ञात'}, ` +
+      `इलाका: ${d.area || 'अज्ञात'}, ` +
+      `कमाई: ${d.income || 'अज्ञात'}, ` +
+      `उम्र: ${d.age || 'अज्ञात'}। ` +
+      `हम आपको काम मिलने पर कॉल करेंगे। कृपया किसी को ओटीपी या पैसे की जानकारी मत दीजिए।`,
+    promptLang: 'Hindi',
+  },
+  'gu-IN': {
+    greeting: 'નમસ્તે! તમારે કોઈ નોકરી જોઈએ છે?',
+    fallback: 'માફ કરજો, હું સમજી શક્યો નહીં. કૃપા કરીને ફરીથી બોલો.',
+    mock: {
+      JOB_TYPE:    'મને સફાઈનું કામ જોઈએ છે',
+      JOB_SUBTYPE: 'ઘરેલું સફાઈ',
+      AREA:        'અમદાવાદ',
+      INCOME:      'મહિને 10000 રૂપિયા',
+      AGE:         '25 વર્ષ',
+    },
+    summaryTemplate: (d) =>
+      `તમારી માહિતી — કામ: ${d.jobType || 'અજ્ઞાત'}, ` +
+      `પ્રકાર: ${d.jobSubtype || 'અજ્ઞાત'}, ` +
+      `વિસ્તાર: ${d.area || 'અજ્ઞાત'}, ` +
+      `આવક: ${d.income || 'અજ્ઞાત'}, ` +
+      `ઉંમર: ${d.age || 'અજ્ઞાત'}. ` +
+      `અમે તમને કામ મળશે ત્યારે કૉલ કરીશું. કૃપા કરીને કોઈને OTP કે પૈસાની માહિતી ન આપો.`,
+    promptLang: 'Gujarati',
+  },
+  'mr-IN': {
+    greeting: 'नमस्कार! तुम्हाला कोणती नोकरी हवी आहे?',
+    fallback: 'माफ करा, मला समजले नाही. कृपया पुन्हा सांगा.',
+    mock: {
+      JOB_TYPE:    'मला सफाईचे काम हवे आहे',
+      JOB_SUBTYPE: 'घरगुती सफाई',
+      AREA:        'अंधेरी',
+      INCOME:      'महिना 10000 रुपये',
+      AGE:         '25 वर्षे',
+    },
+    summaryTemplate: (d) =>
+      `तुमची माहिती — काम: ${d.jobType || 'अज्ञात'}, ` +
+      `प्रकार: ${d.jobSubtype || 'अज्ञात'}, ` +
+      `भाग: ${d.area || 'अज्ञात'}, ` +
+      `उत्पन्न: ${d.income || 'अज्ञात'}, ` +
+      `वय: ${d.age || 'अज्ञात'}. ` +
+      `आम्ही तुम्हाला काम मिळाल्यावर कॉल करू. कृपया कोणालाही OTP किंवा पैशांची माहिती देऊ नका.`,
+    promptLang: 'Marathi',
+  },
+};
 
-GOAL
-1. Collect complete job details: client name, location, nearest landmark, building name, floor/flat, scheduled time, job type, client phone number.
-2. Repeat the full summary for confirmation.
-3. Ask worker's current location (nearest landmark) and give 2-4 simple, landmark-based directional steps.
-4. Provide a short call script for the worker to confirm attendance or reschedule with the client/coordinator.
-5. Warn about never sharing OTP or financial info.
-6. Offer to repeat summary or directions before ending.
+/**
+ * Build the base system prompt for a given language.
+ */
+function getSystemPromptBase(lang) {
+  const langName = LANG_CONFIG[lang]?.promptLang || 'Hindi';
+  return `तुम एक ${langName}-speaking job dispatch assistant हो जिसका नाम "aftermath-hacks" है।
 
-FLOW
-- Greet: "नमस्ते! क्या आप अभी बात कर सकते हैं? आपको किस में मदद चाहिए—अगले काम की डिटेल्स, रास्ता, या क्लाइंट को कॉल करने का तरीका?"
-- Collect details one by one if missing: client name, area + landmark, building + floor, job type, time, client phone.
-- If answer is incomplete: "कृपया कोई बड़ा लैंडमार्क बताइए जैसे स्टेशन, बस स्टॉप, मंदिर, अस्पताल या सोसाइटी का गेट।"
-- Confirm summary: "मैं आपकी जानकारी दोहरा रहा हूँ — …. क्या ये सब सही है?"
-- Directions: ask current landmark, then give 2-4 steps. Offer to repeat slowly.
-- Call script: "नमस्ते, मैं {काम} के लिए आ रहा हूँ। मैं लगभग {समय} में पहुँच जाऊँगा। क्या आप उपलब्ध हैं?"
-- Reschedule script: "नमस्ते, मैं आज {काम} के लिए नहीं आ पाऊँगा। कृपया अपने कॉर्डिनेटर को सूचना दें। धन्यवाद।"
-- Warning: "कृपया ध्यान दें, कोई भी ओटीपी, बैंक या पैसे की जानकारी किसी को मत दीजिए।"
-- Closing: "धन्यवाद। अगर आपको फिर मदद चाहिए तो कॉल करिए। आपका दिन शुभ हो।"
+तुम blue-collar workers की मदद करते हो जो नौकरी ढूंढ रहे हैं।
 
-GUARDRAILS
-- Never give map-based or backend-driven directions; rely solely on landmarks reported by the worker.
-- Do not call clients yourself; provide the number and script.
-- Keep instructions brief but thorough.
-- Always confirm summary and directions before ending.
-- Reply in 1-3 short sentences per turn. Do not produce long monologues.`;
+नियम:
+- केवल सरल और विनम्र ${langName} में बात करो।
+- हर जवाब maximum 2 sentences में दो।
+- एक बार में केवल एक ही सवाल पूछो।
+- अगर जानकारी नहीं है तो खुद से मत बनाओ।
+- कभी OTP, Aadhaar, bank details, या payment माँगो मत।
+- हमेशा worker को चेतावनी दो कि OTP या पैसे की जानकारी किसी को मत दो।
+- बातचीत पहले से शुरू हो चुकी है — दोबारा greeting मत करो।
+- Markdown मत use करो। लंबे paragraphs मत लिखो।
+- IMPORTANT: Respond ONLY in ${langName}. Do NOT switch languages.`;
+}
+
+/**
+ * Map stage name to the conversationData key it collects.
+ */
+function stageToKey(stage) {
+  switch (stage) {
+    case 'JOB_TYPE':    return 'jobType';
+    case 'JOB_SUBTYPE': return 'jobSubtype';
+    case 'AREA':        return 'area';
+    case 'INCOME':      return 'income';
+    case 'AGE':         return 'age';
+    default:            return null;
+  }
+}
+
+/**
+ * Build a stage-aware system prompt injecting real collected data.
+ * @param {string} stage
+ * @param {object} data - conversationData
+ * @param {string} lang - e.g. 'hi-IN'
+ */
+function buildSystemPrompt(stage, data = {}, lang = 'hi-IN') {
+  const { jobType, jobSubtype, area, income, age } = data;
+  const langName = LANG_CONFIG[lang]?.promptLang || 'Hindi';
+
+  const knownParts = [
+    jobType    && `काम: "${jobType}"`,
+    jobSubtype && `प्रकार: "${jobSubtype}"`,
+    area       && `इलाका: "${area}"`,
+    income     && `कमाई: "${income}"`,
+    age        && `उम्र: "${age}"`,
+  ].filter(Boolean);
+  const knownSummary = knownParts.length > 0
+    ? knownParts.join(', ')
+    : '(no data yet)';
+
+  const stageInstructions = {
+    JOB_TYPE:
+      `Stage: JOB_TYPE.\n` +
+      `Worker wants a job. Acknowledge and ask in ${langName}: "What type of work are you looking for?"`,
+
+    JOB_SUBTYPE:
+      `Stage: JOB_SUBTYPE.\n` +
+      `Worker said job type: "${jobType || '?'}".\n` +
+      `Ask in ${langName}: "What kind of ${jobType || 'this'} work? (domestic, commercial, industrial etc.)"`,
+
+    AREA:
+      `Stage: AREA.\nKnown so far: ${knownSummary}.\n` +
+      `Ask in ${langName}: "Which area are you looking for work? Please name a nearby landmark."`,
+
+    INCOME:
+      `Stage: INCOME.\nKnown so far: ${knownSummary}.\n` +
+      `Ask in ${langName}: "How much income do you expect? (daily or monthly)"`,
+
+    AGE:
+      `Stage: AGE.\nKnown so far: ${knownSummary}.\n` +
+      `Ask in ${langName}: "What is your age?"`,
+
+    CONFIRM:
+      `Stage: CONFIRM.\nAll data: ${knownSummary}.\n` +
+      `Repeat ALL collected details clearly in ${langName}, then say the closing safety message.`,
+
+    DONE:
+      `Conversation done. Say goodbye politely in ${langName}.`,
+  };
+
+  const instruction = stageInstructions[stage] || stageInstructions.DONE;
+  return `${getSystemPromptBase(lang)}\n\n${instruction}`;
+}
+
+/**
+ * Advance conversation stage.
+ * JOB_TYPE → JOB_SUBTYPE → AREA → INCOME → AGE → CONFIRM → DONE
+ */
+function updateStage(stage) {
+  switch (stage) {
+    case 'JOB_TYPE':    return 'JOB_SUBTYPE';
+    case 'JOB_SUBTYPE': return 'AREA';
+    case 'AREA':        return 'INCOME';
+    case 'INCOME':      return 'AGE';
+    case 'AGE':         return 'CONFIRM';
+    case 'CONFIRM':     return 'DONE';
+    default:            return 'DONE';
+  }
+}
 
 class VoiceAgentService {
   constructor() {
@@ -137,9 +268,11 @@ class VoiceAgentService {
     this._activeSessions.set(roomName, { room, timer: sessionTimer });
 
     // 4. Choose pipeline based on debug mode
+    const lang = options.language || 'hi-IN';
+    console.log(`[VoiceAgent] Language: ${lang}`);
     const debugMode = process.env.VOICE_DEBUG_MODE;
     if (debugMode === 'stt-llm') {
-      this._runSttGeminiDebug(roomName, room).catch((err) => {
+      this._runSttGeminiDebug(roomName, room, lang).catch((err) => {
         console.error(`[VoiceAgent] STT-LLM debug error in ${roomName}:`, err.message);
       });
     } else {
@@ -167,93 +300,110 @@ class VoiceAgentService {
     return this._sessionResults.get(roomName) || null;
   }
 
-  async _runSttGeminiDebug(roomName, room) {
+  async _runSttGeminiDebug(roomName, room, lang = 'hi-IN') {
     this._sessionResults.set(roomName, { status: 'running', events: [] });
 
+    const cfg = LANG_CONFIG[lang] || LANG_CONFIG['hi-IN'];
+    console.log(`[VOICE] Language: ${lang} (${cfg.promptLang})`);
+    this._pushResult(roomName, { type: 'status', message: `Language: ${cfg.promptLang}` });
+
+    // ── Conversation state ──
+    let stage = 'JOB_TYPE';
+    let conversationActive = true;
+
+    const conversationData = {
+      jobType: null, jobSubtype: null, area: null, income: null, age: null,
+    };
+
     try {
-      // Wait for the browser's mic track BEFORE speaking.
-      // The browser takes 2-4s to connect + enable mic. If we speak first,
-      // the TrackSubscribed event fires during TTS and is missed by _waitForAudioTrack.
       console.log(`[VOICE] Waiting for remote audio track (30s)...`);
       this._pushResult(roomName, { type: 'status', message: 'Waiting for browser mic…' });
       const remoteTrack = await this._waitForAudioTrack(room, 30_000);
 
       if (!remoteTrack) {
         console.log('[VOICE] No audio track received within 30s.');
-        this._pushResult(roomName, { type: 'error', message: 'No audio track received within 30s. Did you click Connect and allow mic?' });
+        this._pushResult(roomName, { type: 'error', message: 'No audio track received within 30s.' });
         this._sessionResults.get(roomName).status = 'done';
         return;
       }
 
-      // Now greet — browser is already connected and mic is live
-      console.log(`[VOICE] Got mic — speaking greeting...`);
+      // ── Speak greeting in selected language ──
+      console.log('[VOICE] Got mic — speaking greeting...');
       this._pushResult(roomName, { type: 'status', message: 'Speaking greeting…' });
-      await this._speak(room, GREETING_TEXT);
+      await this._speak(room, cfg.greeting, lang);
 
-      // Silence gap — let room acoustics clear before capturing user's voice.
-      // Without this, the STT picks up echo/resonance of the greeting itself.
+      // Let room acoustics clear so STT won't echo the greeting.
       await this._delay(1500);
 
+      // ── Multi-turn conversation loop ──
+      while (conversationActive) {
+        console.log('[VOICE][STAGE]', stage);
+        this._pushResult(roomName, { type: 'stage', stage });
 
-      // Listen for user's response
+        // --- Mock transcript (language-specific) ---
+        const transcript = cfg.mock[stage];
+        if (!transcript) {
+          console.log(`[VOICE][MOCK] No mock for stage=${stage}, skipping`);
+          break;
+        }
 
-      this._pushResult(roomName, { type: 'status', message: `Listening for ${LISTEN_DURATION_MS / 1000}s…` });
-      console.log(`[VOICE] Listening for ${LISTEN_DURATION_MS}ms...`);
-      const wav = await this._listen(remoteTrack, LISTEN_DURATION_MS);
+        await this._delay(1000);
 
-      if (!wav || wav.length <= 44) {
-        console.log('[VOICE][STT] empty — no audio captured');
-        this._pushResult(roomName, { type: 'error', message: 'No audio captured.' });
-        this._sessionResults.get(roomName).status = 'done';
-        return;
+        console.log(`[VOICE][MOCK] stage=${stage} → "${transcript}"`);
+        this._pushResult(roomName, { type: 'stt', transcript, durationMs: 0, mock: true });
+
+        // --- Store the transcript against the current stage's data key ---
+        const dataKey = stageToKey(stage);
+        if (dataKey) {
+          conversationData[dataKey] = transcript.trim();
+          console.log('[VOICE][DATA]', JSON.stringify(conversationData));
+          this._pushResult(roomName, { type: 'data', data: { ...conversationData } });
+        }
+
+        // --- LLM (stage-aware prompt with collected data + language) ---
+        const systemPrompt = buildSystemPrompt(stage, conversationData, lang);
+        const llmStart = Date.now();
+        console.time('llm');
+        const reply = await generateReply({ systemPrompt, userText: transcript });
+        console.timeEnd('llm');
+        const llmMs = Date.now() - llmStart;
+
+        console.log('[VOICE][LLM]', reply);
+        this._pushResult(roomName, { type: 'llm', reply, durationMs: llmMs, stage });
+
+        // --- TTS: speak reply in selected language ---
+        if (reply && reply.trim()) {
+          this._pushResult(roomName, { type: 'status', message: `[${stage}] Speaking reply…` });
+          await this._speak(room, reply, lang);
+        }
+
+        // --- Advance stage AFTER speaking ---
+        stage = updateStage(stage);
+        console.log('[VOICE][STAGE] → advanced to', stage);
+
+        if (stage === 'DONE') {
+          conversationActive = false;
+        } else {
+          // Brief pause between turns so mic doesn't catch TTS echo
+          await this._delay(800);
+        }
       }
 
-      const audioBytes = wav.length;
-      console.log(`[VOICE] Captured ${audioBytes} bytes. Running STT...`);
-      this._pushResult(roomName, { type: 'status', message: `Captured ${audioBytes} bytes. Running STT…` });
+      // ── Final summary via TTS (language-aware) ──
+      const summary = cfg.summaryTemplate(conversationData);
 
-      // STT
-      const sttStart = Date.now();
-      console.time('stt');
-      const { transcript } = await sarvamService.speechToText(wav, { languageCode: 'hi-IN' });
-      console.timeEnd('stt');
-      const sttMs = Date.now() - sttStart;
-
-      if (!transcript || transcript.trim() === '') {
-        console.log('[VOICE][STT] empty');
-        this._pushResult(roomName, { type: 'stt', transcript: '', durationMs: sttMs });
-        this._sessionResults.get(roomName).status = 'done';
-        return;
-      }
-
-      console.log('[VOICE][STT]', transcript);
-      this._pushResult(roomName, { type: 'stt', transcript, durationMs: sttMs });
-
-      // LLM
-      const llmStart = Date.now();
-      console.time('llm');
-      const reply = await generateReply({ systemPrompt: AGENT_SYSTEM_PROMPT, userText: transcript });
-      console.timeEnd('llm');
-      const llmMs = Date.now() - llmStart;
-
-      console.log('[VOICE][LLM]', reply);
-      this._pushResult(roomName, { type: 'llm', reply, durationMs: llmMs });
-
-      // Speak the LLM reply back to the user via TTS
-      if (reply && reply.trim()) {
-        console.log(`[VOICE] Speaking LLM reply via TTS...`);
-        this._pushResult(roomName, { type: 'status', message: 'Speaking reply…' });
-        await this._speak(room, reply);
-      }
+      console.log('[VOICE][SUMMARY]', summary);
+      this._pushResult(roomName, { type: 'summary', summary, data: { ...conversationData }, language: lang });
+      await this._speak(room, summary, lang);
 
       this._sessionResults.get(roomName).status = 'done';
 
     } catch (err) {
-      console.error(`[VOICE] STT-LLM debug pipeline failed:`, err.message);
+      console.error(`[VOICE] STT-LLM pipeline failed:`, err.message);
       this._pushResult(roomName, { type: 'error', message: err.message });
       if (this._sessionResults.has(roomName)) this._sessionResults.get(roomName).status = 'error';
     } finally {
-      // Always disconnect cleanly
+      // Disconnect ONLY after loop exits (or on error)
       try {
         await this.endSession(roomName);
         this._pushResult(roomName, { type: 'status', message: 'Disconnected cleanly.' });
@@ -424,16 +574,16 @@ class VoiceAgentService {
   //  PRIVATE: Speak — TTS + publish to room
   // ─────────────────────────────────────────
 
-  async _speak(room, text) {
+  async _speak(room, text, languageCode = 'hi-IN') {
     // Declared outside try so finally block can access them
     let source = null;
     let trackSid = null;
 
     try {
       // 1. TTS call
-      console.log('[VoiceAgent] Requesting TTS...');
+      console.log(`[VoiceAgent] Requesting TTS (${languageCode})...`);
       const wavBuffer = await sarvamService.textToSpeech(text, {
-        languageCode: 'hi-IN',
+        languageCode,
         sampleRate: 48000,
       });
 

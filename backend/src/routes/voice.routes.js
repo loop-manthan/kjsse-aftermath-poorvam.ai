@@ -19,12 +19,13 @@ router.post('/sessions/initiate', async (req, res) => {
   try {
     const roomName = req.body.roomName || `room-${Date.now()}`;
     const simulatorIdentity = req.body.simulatorIdentity || `simulator-${Date.now()}`;
+    const language = req.body.language || 'hi-IN';
 
     // Generate token for the browser simulator
     const simulatorToken = await livekitService.createRoomToken(roomName, simulatorIdentity);
 
     // Start the Node agent in the background (fire-and-forget)
-    voiceAgentService.startVoiceSession(roomName).catch((err) => {
+    voiceAgentService.startVoiceSession(roomName, { language }).catch((err) => {
       console.error('[VoiceRoute] Agent failed to start:', err.message);
     });
 
@@ -34,6 +35,7 @@ router.post('/sessions/initiate', async (req, res) => {
       livekitUrl: process.env.LIVEKIT_URL,
       agentIdentity: 'node-agent',
       simulatorIdentity,
+      language,
     });
   } catch (error) {
     console.error('[VoiceRoute] Session initiation error:', error);
