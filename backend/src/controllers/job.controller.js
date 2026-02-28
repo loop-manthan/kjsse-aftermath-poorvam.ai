@@ -436,7 +436,9 @@ export const markPaid = async (req, res) => {
     }
 
     job.paymentStatus = "completed";
-    job.paymentMode = method || "offline";
+    // Map method to valid paymentMode enum: "online" or "offline"
+    const modeMap = { cash: "offline", upi: "online", online: "online", offline: "offline" };
+    job.paymentMode = modeMap[method] || "offline";
 
     await job.save();
 

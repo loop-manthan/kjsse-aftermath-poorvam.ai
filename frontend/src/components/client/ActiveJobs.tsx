@@ -18,6 +18,7 @@ const ActiveJobs = () => {
   const [actioningJobId, setActioningJobId] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [finalAmount, setFinalAmount] = useState("");
 
   useEffect(() => {
     fetchJobs();
@@ -63,15 +64,26 @@ const ActiveJobs = () => {
     }
   };
 
-  const handleMarkPaid = async (method: string) => {
+  const openPaymentModal = (job: any) => {
+    setSelectedJob(job);
+    setFinalAmount(job.paymentOffer?.toString() || job.pricing?.finalPrice?.toString() || "");
+    setShowPaymentModal(true);
+  };
+
+  const handleMarkPaid = async () => {
     if (!selectedJob) return;
+    if (!finalAmount || parseFloat(finalAmount) <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
 
     setActioningJobId(selectedJob._id);
     try {
-      await jobService.markPaid(selectedJob._id, method);
+      await jobService.markPaid(selectedJob._id, "offline");
       toast.success("Payment marked as completed!");
       setShowPaymentModal(false);
       setSelectedJob(null);
+      setFinalAmount("");
       await fetchJobs();
     } catch (error: any) {
       console.error("Error marking payment:", error);
@@ -239,7 +251,7 @@ const ActiveJobs = () => {
             )}
 
             {job.status === "completed" &&
-              job.payment?.status === "pending" && (
+              job.paymentStatus !== "completed" && (
                 <div className="glass-nested rounded-lg p-4 space-y-3">
                   <div className="flex items-center gap-2 text-purple-400">
                     <CheckCircle size={16} />
@@ -247,27 +259,21 @@ const ActiveJobs = () => {
                       Job Completed!
                     </span>
                   </div>
-                  <p className="text-sm text-white/70">
-                    Final Amount: ₹{job.pricing.finalPrice}
-                  </p>
                   <button
-                    onClick={() => {
-                      setSelectedJob(job);
-                      setShowPaymentModal(true);
-                    }}
-                    className="w-full glass-button rounded-xl py-3 bg-blue-500/20 hover:bg-blue-500/30 text-white font-medium"
+                    onClick={() => openPaymentModal(job)}
+                    className="w-full glass-button rounded-xl py-3 bg-green-500/20 hover:bg-green-500/30 text-white font-medium"
                   >
-                    Mark Payment as Completed
+                    ✅ Mark Payment as Completed
                   </button>
                 </div>
               )}
 
             {job.status === "completed" &&
-              job.payment?.status === "completed" && (
+              job.paymentStatus === "completed" && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
                   <CheckCircle size={16} className="text-purple-400" />
                   <span className="text-sm text-purple-400">
-                    Payment completed via {job.payment.method.toUpperCase()}
+                    ✅ Payment Completed
                   </span>
                 </div>
               )}
@@ -275,51 +281,50 @@ const ActiveJobs = () => {
         ))}
       </div>
 
-      {/* Payment Modal */}
+      {/* Simple Payment Modal */}
       {showPaymentModal && selectedJob && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="glass-card rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-2xl font-bold text-white mb-4">
+            <h3 className="text-2xl font-bold text-white mb-6">
               Mark Payment as Completed
             </h3>
 
             <div className="space-y-4">
               <div className="glass-nested rounded-xl p-4">
-                <p className="text-sm text-white/60 mb-1">Final Amount</p>
-                <p className="text-3xl font-bold text-white">
-                  ₹{selectedJob.pricing.finalPrice}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-white/70 mb-3">
-                  How did you pay the worker?
-                </p>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => handleMarkPaid("cash")}
-                    disabled={actioningJobId === selectedJob._id}
-                    className="w-full glass-button rounded-xl py-3 bg-green-500/20 hover:bg-green-500/30 text-white font-medium disabled:opacity-50"
-                  >
-                    💵 Cash Payment
-                  </button>
-                  <button
-                    onClick={() => handleMarkPaid("upi")}
-                    disabled={actioningJobId === selectedJob._id}
-                    className="w-full glass-button rounded-xl py-3 bg-blue-500/20 hover:bg-blue-500/30 text-white font-medium disabled:opacity-50"
-                  >
-                    📱 UPI Payment
-                  </button>
+                <label className="text-sm text-white/60 mb-2 block">
+                  Final Amount
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-white">₹</span>
+                  <input
+                    type="number"
+                    value={finalAmount}
+                    onChange={(e) => setFinalAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    min="0"
+                    className="w-full bg-transparent text-2xl font-bold text-white outline-none placeholder-white/30"
+                  />
                 </div>
               </div>
+
+              <button
+                onClick={handleMarkPaid}
+                disabled={actioningJobId === selectedJob._id || !finalAmount}
+                className="w-full glass-button rounded-xl py-4 bg-green-500/20 hover:bg-green-500/30 text-white font-semibold text-lg disabled:opacity-50 transition-all"
+              >
+                {actioningJobId === selectedJob._id
+                  ? "Processing..."
+                  : "✅ Confirm Payment"}
+              </button>
             </div>
 
             <button
               onClick={() => {
                 setShowPaymentModal(false);
                 setSelectedJob(null);
+                setFinalAmount("");
               }}
-              className="w-full mt-4 glass-button rounded-xl py-3 text-white/70 hover:text-white"
+              className="w-full mt-3 glass-button rounded-xl py-3 text-white/70 hover:text-white"
             >
               Cancel
             </button>
