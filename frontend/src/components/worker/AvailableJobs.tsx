@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { matchingService } from "../../api/services";
 import { useAuth } from "../../context/AuthContext";
 import { useJobs } from "../../context/JobContext";
-import { MapPin, DollarSign, Clock, CheckCircle, XCircle } from "lucide-react";
+import { MapPin, Clock, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 
 const AvailableJobs = () => {
@@ -96,7 +96,7 @@ const AvailableJobs = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="flex items-center gap-2 text-white/70">
-                <DollarSign size={16} className="text-green-400" />
+                <span className="text-green-400 text-sm font-semibold">₹</span>
                 <span className="text-sm font-semibold text-green-400">
                   ₹{job.paymentOffer}
                 </span>

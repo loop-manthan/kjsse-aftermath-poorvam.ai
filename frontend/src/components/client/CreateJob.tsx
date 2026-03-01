@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { useJobs } from "../../context/JobContext";
 import { useAuth } from "../../context/AuthContext";
-import { MapPin, DollarSign, FileText } from "lucide-react";
+import { MapPin, FileText } from "lucide-react";
 import toast from "react-hot-toast";
+import AddressAutocomplete from "../shared/AddressAutocomplete";
 
 const CreateJob = () => {
   const { user } = useAuth();
   const { createJob } = useJobs();
   const [loading, setLoading] = useState(false);
+  const [locationCoordinates, setLocationCoordinates] = useState<
+    [number, number] | null
+  >(null);
   const [formData, setFormData] = useState({
     description: "",
     payment: "",
@@ -37,7 +41,7 @@ const CreateJob = () => {
         paymentOffer: parseFloat(gigData.payment),
         location: {
           type: "Point",
-          coordinates: user?.location?.coordinates || [0, 0],
+          coordinates: locationCoordinates || user?.location?.coordinates || [0, 0],
         },
         address: gigData.location,
       });
@@ -54,6 +58,7 @@ const CreateJob = () => {
       toast.success("Job created successfully!");
 
       setFormData({ description: "", payment: "", location: "" });
+      setLocationCoordinates(null);
     } catch (error) {
       console.error("Error posting gig:", error);
     } finally {
@@ -89,7 +94,7 @@ const CreateJob = () => {
             Payment Offer (₹)
           </label>
           <div className="glass-input rounded-xl flex items-center gap-3 px-4">
-            <DollarSign size={20} className="text-white/40" />
+            <span className="text-white/40">₹</span>
             <input
               type="number"
               name="payment"
@@ -107,18 +112,14 @@ const CreateJob = () => {
           <label className="text-sm font-medium text-white/70 mb-2 block">
             Job Location *
           </label>
-          <div className="glass-input rounded-xl flex items-center gap-3 px-4">
-            <MapPin size={20} className="text-white/40" />
-            <input
-              type="text"
-              name="location"
-              placeholder="Enter job location..."
-              value={formData.location}
-              onChange={handleChange}
-              className="flex-1 bg-transparent py-3 text-white placeholder:text-white/40 focus:outline-none"
-              required
-            />
-          </div>
+          <AddressAutocomplete
+            value={formData.location}
+            onChange={(address, coordinates) => {
+              setFormData((prev) => ({ ...prev, location: address }));
+              setLocationCoordinates(coordinates || null);
+            }}
+            placeholder="Start typing job location..."
+          />
         </div>
 
         <button

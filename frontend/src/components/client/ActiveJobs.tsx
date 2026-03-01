@@ -3,7 +3,6 @@ import { useJobs } from "../../context/JobContext";
 import {
   Clock,
   MapPin,
-  DollarSign,
   User,
   CheckCircle,
   XCircle,
@@ -165,7 +164,7 @@ const ActiveJobs = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="flex items-center gap-2 text-white/70">
-                <DollarSign size={16} className="text-green-400" />
+                <span className="text-green-400 text-sm font-semibold">₹</span>
                 <span className="text-sm">₹{job.paymentOffer}</span>
               </div>
 
