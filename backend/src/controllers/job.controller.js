@@ -6,6 +6,7 @@ import {
   enhanceJobDescription,
 } from "../services/ai.service.js";
 import { createNotification } from "../services/notification.service.js";
+import { syncAllPendingJobsToBolna } from "../services/bolna.service.js";
 
 export const createJob = async (req, res) => {
   try {
@@ -35,6 +36,11 @@ export const createJob = async (req, res) => {
     });
 
     await job.populate("clientId", "name phone address");
+
+    // Fire-and-forget: Sync ALL pending jobs to Bolna AI agent
+    syncAllPendingJobsToBolna().catch((err) =>
+      console.error("Bolna AI sync failed (non-blocking):", err.message),
+    );
 
     res.status(201).json({
       message: "Job created successfully",

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { jobService, matchingService } from '../api/services';
+import { jobService } from '../api/services';
 import toast from 'react-hot-toast';
 import { Job, CreateJobData, JobContextType } from '../types/job';
 
@@ -38,11 +38,8 @@ export const JobProvider = ({ children }: JobProviderProps) => {
     try {
       const { data } = await jobService.createJob(jobData);
       
-      // Auto-assign worker
-      await matchingService.findWorker(data.job._id);
-      
       await fetchJobs();
-      toast.success('Job created and worker assigned!');
+      toast.success('Job created successfully!');
       return data.job;
     } catch (error) {
       throw error;

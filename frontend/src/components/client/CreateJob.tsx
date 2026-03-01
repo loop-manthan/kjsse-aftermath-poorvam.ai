@@ -2,25 +2,16 @@ import { useState } from "react";
 import { useJobs } from "../../context/JobContext";
 import { useAuth } from "../../context/AuthContext";
 import { MapPin, DollarSign, FileText } from "lucide-react";
-import AddressAutocomplete from "../shared/AddressAutocomplete";
+import toast from "react-hot-toast";
 
 const CreateJob = () => {
   const { user } = useAuth();
   const { createJob } = useJobs();
   const [loading, setLoading] = useState(false);
-  const [aiCategory, setAiCategory] = useState<{
-    category: string;
-    displayName: string;
-    confidence: string;
-  } | null>(null);
   const [formData, setFormData] = useState({
     description: "",
-    paymentOffer: "",
-    address: "",
-    location: {
-      type: "Point" as const,
-      coordinates: [0, 0] as [number, number],
-    },
+    payment: "",
+    location: ""
   });
 
   const handleChange = (
@@ -29,56 +20,42 @@ const CreateJob = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleLocationCapture = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setFormData({
-            ...formData,
-            address: `${position.coords.latitude}, ${position.coords.longitude}`,
-          });
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-        },
-      );
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const postGig = async () => {
     setLoading(true);
 
+    // Capture the form values NOW before any async re-renders
+    const gigData = {
+      description: formData.description,
+      payment: formData.payment,
+      location: formData.location,
+    };
+
     try {
-      if (!user) return;
-
-      const response = await createJob({
-        description: formData.description,
-        paymentOffer: parseFloat(formData.paymentOffer),
-        location:
-          formData.location.coordinates[0] !== 0
-            ? formData.location
-            : {
-                type: "Point",
-                coordinates: user.location.coordinates,
-              },
-        address: formData.address || user.address,
+      // Post to backend first
+      await createJob({
+        description: gigData.description,
+        paymentOffer: parseFloat(gigData.payment),
+        location: {
+          type: "Point",
+          coordinates: user?.location?.coordinates || [0, 0],
+        },
+        address: gigData.location,
       });
 
-      // Show AI categorization result
-      if ((response as any)?.aiCategorization) {
-        setAiCategory((response as any).aiCategorization);
-        setTimeout(() => setAiCategory(null), 5000);
-      }
+      // Trigger Bolna call
+      await fetch(
+        "https://hook.eu1.make.com/lb6ffub10nnzutskiof8eyxxyjknatt9",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(gigData),
+        },
+      );
+      toast.success("Job created successfully!");
 
-      setFormData({
-        description: "",
-        paymentOffer: "",
-        address: "",
-        location: { type: "Point", coordinates: [0, 0] },
-      });
+      setFormData({ description: "", payment: "", location: "" });
     } catch (error) {
-      console.error("Error creating job:", error);
+      console.error("Error posting gig:", error);
     } finally {
       setLoading(false);
     }
@@ -88,23 +65,7 @@ const CreateJob = () => {
     <div className="glass-card rounded-2xl p-6">
       <h2 className="text-2xl font-bold mb-6 text-white">Create New Job</h2>
 
-      {aiCategory && (
-        <div className="mb-4 p-4 rounded-xl bg-green-500/20 border border-green-500/30 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center">
-            <FileText size={20} className="text-green-400" />
-          </div>
-          <div className="flex-1">
-            <p className="text-white font-medium">
-              AI Detected Category: {aiCategory.displayName}
-            </p>
-            <p className="text-white/60 text-sm">
-              Confidence: {aiCategory.confidence}
-            </p>
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="space-y-5">
         <div>
           <label className="text-sm font-medium text-white/70 mb-2 block">
             Job Description
@@ -131,14 +92,13 @@ const CreateJob = () => {
             <DollarSign size={20} className="text-white/40" />
             <input
               type="number"
-              name="paymentOffer"
+              name="payment"
               placeholder="Enter your budget in ₹"
-              value={formData.paymentOffer}
+              value={formData.payment}
               onChange={handleChange}
               className="flex-1 bg-transparent py-3 text-white placeholder:text-white/40 focus:outline-none"
               required
               min="0"
-              step="0.01"
             />
           </div>
         </div>
@@ -147,30 +107,29 @@ const CreateJob = () => {
           <label className="text-sm font-medium text-white/70 mb-2 block">
             Job Location *
           </label>
-          <AddressAutocomplete
-            value={formData.address}
-            onChange={(address, coordinates) => {
-              setFormData({
-                ...formData,
-                address,
-                location: coordinates
-                  ? { type: "Point", coordinates }
-                  : formData.location,
-              });
-            }}
-            placeholder="Start typing job location..."
-            onLocationCapture={handleLocationCapture}
-          />
+          <div className="glass-input rounded-xl flex items-center gap-3 px-4">
+            <MapPin size={20} className="text-white/40" />
+            <input
+              type="text"
+              name="location"
+              placeholder="Enter job location..."
+              value={formData.location}
+              onChange={handleChange}
+              className="flex-1 bg-transparent py-3 text-white placeholder:text-white/40 focus:outline-none"
+              required
+            />
+          </div>
         </div>
 
         <button
-          type="submit"
+          type="button"
           disabled={loading}
+          onClick={postGig}
           className="w-full glass-button rounded-xl py-3 text-white bg-blue-500/20 hover:bg-blue-500/30 transition-all disabled:opacity-50 font-medium"
         >
           {loading ? "Creating Job..." : "Post Job & Find Worker"}
         </button>
-      </form>
+      </div>
     </div>
   );
 };
